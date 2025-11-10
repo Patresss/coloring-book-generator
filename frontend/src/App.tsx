@@ -413,14 +413,14 @@ export const App: React.FC = () => {
         {/* Główny interfejs renderowany tylko gdy konfiguracja jest kompletna */}
         {!isMobile && (
         <Box component="aside" sx={{ width: 480, borderRight: 1, borderColor: 'divider', p: 2, overflow: 'auto' }}>
-          <Typography variant="h6" gutterBottom>Historia</Typography>
           <List dense>
             {history.filter(item => !!item.imageUrl).map(item => (
               <React.Fragment key={item.id}>
                 <ListItem
+                  disableGutters
                   alignItems="flex-start"
                   onClick={() => item.imageUrl && setSelected(item)}
-                  sx={{ cursor: item.imageUrl ? 'pointer' : 'default', bgcolor: selected?.id === item.id ? 'action.selected' : undefined }}
+                  sx={{ cursor: item.imageUrl ? 'pointer' : 'default', bgcolor: selected?.id === item.id ? 'action.selected' : undefined, px: 1 }}
                 >
                   <ListItemText
                     primaryTypographyProps={{ variant: 'subtitle1' }}
@@ -802,7 +802,7 @@ export const App: React.FC = () => {
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseDialog} autoFocus>Zamknij</Button>
+          <Button onClick={handleCloseDialog} autoFocus startIcon={<CloseIcon />}>Zamknij</Button>
         </DialogActions>
       </Dialog>
       <Dialog open={configOpen} onClose={() => setConfigOpen(false)} fullWidth maxWidth="sm">
@@ -845,17 +845,22 @@ export const App: React.FC = () => {
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setConfigOpen(false)}>Zamknij</Button>
+          <Button onClick={() => setConfigOpen(false)} startIcon={<CloseIcon />}>Zamknij</Button>
         </DialogActions>
       </Dialog>
       {isMobile && (
-        <Dialog open={historyOpen} fullScreen onClose={() => setHistoryOpen(false)}>
-          <DialogTitle>Historia</DialogTitle>
-          <DialogContent dividers>
+        <Dialog
+          open={historyOpen}
+          fullScreen
+          onClose={() => setHistoryOpen(false)}
+          PaperProps={{ sx: { bgcolor: 'background.default' } }}
+        >
+          <DialogContent dividers sx={{ bgcolor: 'background.default' }}>
             <List dense>
               {history.filter(item => !!item.imageUrl).map(item => (
                 <React.Fragment key={item.id}>
                   <ListItem
+                    disableGutters
                     alignItems="flex-start"
                     onClick={() => {
                       if (item.imageUrl) {
@@ -863,7 +868,7 @@ export const App: React.FC = () => {
                         setHistoryOpen(false);
                       }
                     }}
-                    sx={{ cursor: item.imageUrl ? 'pointer' : 'default' }}
+                    sx={{ cursor: item.imageUrl ? 'pointer' : 'default', px: 1 }}
                   >
                     <ListItemText
                       primaryTypographyProps={{ variant: 'subtitle1' }}
@@ -929,7 +934,7 @@ export const App: React.FC = () => {
             </List>
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setHistoryOpen(false)}>Zamknij</Button>
+            <Button onClick={() => setHistoryOpen(false)} startIcon={<CloseIcon />}>Zamknij</Button>
           </DialogActions>
         </Dialog>
       )}
@@ -959,7 +964,7 @@ export const App: React.FC = () => {
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setPromptInfoItem(null)}>Zamknij</Button>
+          <Button onClick={() => setPromptInfoItem(null)} startIcon={<CloseIcon />}>Zamknij</Button>
         </DialogActions>
       </Dialog>
     </Box>
