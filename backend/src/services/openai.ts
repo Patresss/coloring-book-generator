@@ -10,26 +10,6 @@ function getClient() {
   return new OpenAI({ apiKey: config.openaiApiKey, timeout: config.openaiTimeoutMs });
 }
 
-function extractResponsesText(resp: any): string | undefined {
-  const t = resp?.output_text;
-  if (typeof t === 'string' && t.trim()) return t.trim();
-  const outputs = resp?.output;
-  if (Array.isArray(outputs)) {
-    const parts: string[] = [];
-    for (const o of outputs) {
-      const cont = o?.content;
-      if (Array.isArray(cont)) {
-        for (const c of cont) {
-          if (c?.type === 'output_text' && typeof c?.text === 'string') parts.push(c.text);
-        }
-      }
-    }
-    const joined = parts.join(' ').trim();
-    if (joined) return joined;
-  }
-  return undefined;
-}
-
 export const transcribeAudio = async (audioPath: string): Promise<string> => {
   if (!config.openaiApiKey) {
     // Fallback for local testing without API key
@@ -68,11 +48,13 @@ export const generateImage = async (prompt: string): Promise<Buffer> => {
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
       const isDalle3 = model === 'dall-e-3';
+      const isGptImage1 = model === 'gpt-image-1';
       const result = await client.images.generate({
         model,
         prompt: p,
         ...(size ? { size } : {}),
         ...(isDalle3 ? { response_format: 'b64_json' } : {}),
+        ...(isGptImage1 ? { quality: 'high' } : {}),
       } as any);
       const b64 = (result as any)?.data?.[0]?.b64_json;
       if (!b64) throw new Error('Brak danych obrazu z OpenAI');
@@ -101,43 +83,23 @@ export const improvePrompt = async (original: string): Promise<string> => {
 
   const client = getClient();
   const chatModel = config.textModel || 'gpt-4o-mini';
-  const isModern = /^(gpt-4o|gpt-4\.1|gpt-5|o)/.test(chatModel);
   let improved: string | undefined;
-  if (isModern) {
-    const resp = await (client as any).responses.create({
-      model: chatModel,
-      input: [
-        { role: 'system', content: [{ type: 'input_text', text: system }] },
-        { role: 'user', content: [{ type: 'input_text', text: user }] },
-      ],
-      max_output_tokens: 200,
-    });
-    improved = extractResponsesText(resp);
-    // Fallback: try chat.completions without unsupported params
-    if (!improved) {
-      try {
-        const cc = await client.chat.completions.create({
-          model: chatModel,
-          messages: [
-            { role: 'system', content: system },
-            { role: 'user', content: user },
-          ],
-        } as any);
-        improved = (cc as any)?.choices?.[0]?.message?.content?.trim?.();
-      } catch {}
-    }
-  } else {
-    const resp = await client.chat.completions.create({
+
+  try {
+    const cc = await client.chat.completions.create({
       model: chatModel,
       messages: [
         { role: 'system', content: system },
         { role: 'user', content: user },
       ],
-      temperature: 0.7,
-      max_tokens: 200,
-    });
-    improved = (resp as any)?.choices?.[0]?.message?.content?.trim();
+    } as any);
+    improved = (cc as any)?.choices?.[0]?.message?.content?.trim?.();
+  } catch (e: any) {
+      const msg = String(e?.message || e);
+      logger.error('Error during finding the improved prompt', { msg });
   }
+  logger.info('Ulepszony promot: ', { improved });
+
   if (!improved) throw new Error('Brak treści ulepszonego promptu');
   return improved;
 };
