@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { api, HistoryItem, type RuntimeConfig } from './api/client';
+import { auth, onAuthRequired } from './api/auth';
   import {
     AppBar,
     Toolbar,
@@ -16,6 +17,7 @@ import { api, HistoryItem, type RuntimeConfig } from './api/client';
     FormControlLabel,
     Tooltip,
     IconButton,
+    TextField,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -54,6 +56,10 @@ export const App: React.FC = () => {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [configOpen, setConfigOpen] = useState(false);
   const [runtimeConfig, setRuntimeConfig] = useState<RuntimeConfig | null>(null);
+  const [needLogin, setNeedLogin] = useState<boolean>(false);
+  const [loginPw, setLoginPw] = useState<string>('');
+  const [loginErr, setLoginErr] = useState<string | null>(null);
+  const [loginBusy, setLoginBusy] = useState<boolean>(false);
   const canGenerate = runtimeConfig?.canGenerate !== false;
   // AI improve switch synced with URL param `improve` and persisted
   const [improveEnabled, setImproveEnabled] = useState<boolean>(() => {
@@ -81,6 +87,11 @@ export const App: React.FC = () => {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const cancelledRef = useRef<boolean>(false);
+
+  useEffect(() => {
+    const off = onAuthRequired(() => setNeedLogin(true));
+    return off;
+  }, []);
 
   useEffect(() => {
     // Load runtime config (timeouts) then fetch history
@@ -279,9 +290,59 @@ export const App: React.FC = () => {
               </Typography>
             )}
             <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-              Uzupełnij plik .env i zrestartuj backend.
+              Uzupełnij zmienne środowiskowe i zrestartuj backend.
             </Typography>
           </Alert>
+        </Box>
+      </Box>
+    );
+  }
+
+  // Login overlay when backend requires auth
+  if (needLogin) {
+    return (
+      <Box sx={{ display: 'grid', placeItems: 'center', height: '100dvh', p: 2, bgcolor: 'background.default' }}>
+        <Box sx={{ width: '100%', maxWidth: 420, bgcolor: 'background.paper', p: 3, borderRadius: 2, boxShadow: 3 }}>
+          <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>Wymagane logowanie</Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>Podaj hasło aby uzyskać dostęp.</Typography>
+          <form onSubmit={async (e) => {
+            e.preventDefault();
+            setLoginErr(null);
+            setLoginBusy(true);
+            try {
+              await auth.login(loginPw);
+              setNeedLogin(false);
+              setLoginPw('');
+              // After login, load config and history
+              api.loadConfig().finally(async () => {
+                try { const cfg = await api.getConfig(); setRuntimeConfig(cfg); } catch {}
+                refreshHistory();
+              });
+            } catch (err: any) {
+              const msg = String(err?.message || 'Błąd logowania');
+              setLoginErr(msg.includes('Nieprawidłowe hasło') ? 'Nieprawidłowe hasło.' : 'Błąd logowania.');
+            } finally {
+              setLoginBusy(false);
+            }
+          }}>
+            <TextField
+              type="password"
+              label="Hasło"
+              value={loginPw}
+              onChange={(e) => setLoginPw(e.target.value)}
+              autoFocus
+              fullWidth
+              disabled={loginBusy}
+            />
+            {loginErr && (
+              <Alert severity="error" sx={{ mt: 1.5 }}>{loginErr}</Alert>
+            )}
+            <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
+              <Button type="submit" variant="contained" disabled={loginBusy} fullWidth>
+                {loginBusy ? 'Logowanie…' : 'Zaloguj'}
+              </Button>
+            </Stack>
+          </form>
         </Box>
       </Box>
     );
@@ -758,7 +819,7 @@ export const App: React.FC = () => {
             </Box>
           </Stack>
           <Typography variant="caption" color="text.secondary" sx={{ mt: 2, display: 'block' }}>
-            Aby zmienić wartości, edytuj plik .env i zrestartuj backend.
+            Aby zmienić wartości, edytuj zmienne środowiskowe i zrestartuj aplikacje.
           </Typography>
         </DialogContent>
         <DialogActions>

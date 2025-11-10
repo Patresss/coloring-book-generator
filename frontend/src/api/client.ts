@@ -1,3 +1,4 @@
+import { signalAuthRequired } from './auth';
 export type HistoryItem = { id: string; createdAt: number; prompt: string; imageUrl?: string };
 
 const parseTimeout = (v: unknown, fallback: number) => {
@@ -17,7 +18,7 @@ export const setTimeoutMs = (ms: number) => {
 
 export const loadConfig = async () => {
   try {
-    const res = await fetch('/api/config');
+    const res = await safeFetch('/api/config');
     if (!res.ok) return;
     const data = await res.json();
     if (data && typeof data.openaiTimeoutMs === 'number') {
@@ -37,7 +38,7 @@ export type RuntimeConfig = {
 };
 
 export const getConfig = async (): Promise<RuntimeConfig> => {
-  const res = await fetch('/api/config');
+  const res = await safeFetch('/api/config');
   if (!res.ok) throw new Error(await safeText(res));
   return res.json();
 };
@@ -59,13 +60,24 @@ const withTimeout = async <T>(fn: (signal: AbortSignal) => Promise<T>, ms = 3000
 
 const postJson = async <T>(url: string, body: any, timeoutMs?: number): Promise<T> =>
   withTimeout(async (signal) => {
-    const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal });
+    const res = await safeFetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal });
     if (!res.ok) throw new Error(await safeText(res));
     return res.json();
   }, timeoutMs);
 
 const safeText = async (res: Response) => {
   try { return await res.text(); } catch { return `${res.status} ${res.statusText}`; }
+};
+
+const safeFetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+  const res = await fetch(input, init);
+  if (res.status === 401) {
+    signalAuthRequired();
+    // consume body to free stream, then throw
+    try { await res.text(); } catch {}
+    throw new Error('Unauthorized');
+  }
+  return res;
 };
 
 export const api = {
@@ -76,7 +88,7 @@ export const api = {
     const form = new FormData();
     form.append('audio', audio, 'audio.webm');
     return withTimeout(async (signal) => {
-      const res = await fetch('/api/transcribe', { method: 'POST', body: form, signal });
+      const res = await safeFetch('/api/transcribe', { method: 'POST', body: form, signal });
       if (!res.ok) throw new Error(await safeText(res));
       return res.json();
     }, OPENAI_TIMEOUT);
@@ -92,14 +104,14 @@ export const api = {
   },
   async history(): Promise<HistoryItem[]>{
     return withTimeout(async (signal) => {
-      const res = await fetch('/api/history', { signal });
+      const res = await safeFetch('/api/history', { signal });
       if (!res.ok) throw new Error(await safeText(res));
       return res.json();
     });
   },
   async remove(id: string): Promise<{ ok: true }>{
     return withTimeout(async (signal) => {
-      const res = await fetch(`/api/history/${id}`, { method: 'DELETE', signal });
+      const res = await safeFetch(`/api/history/${id}`, { method: 'DELETE', signal });
       if (!res.ok) throw new Error(await safeText(res));
       return res.json();
     });

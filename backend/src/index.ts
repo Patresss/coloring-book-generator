@@ -10,6 +10,8 @@ import { printRouter } from './routes/print.js';
 import { historyRouter } from './routes/history.js';
 import { configRouter } from './routes/config.js';
 import { improveRouter } from './routes/improve.js';
+import { authRequired } from './middleware/auth.js';
+import { authRouter } from './routes/auth.js';
 
 const app = express();
 
@@ -49,6 +51,13 @@ const makeRateLimit = (max: number, windowMs: number) => {
 };
 
 // API routes
+// Auth endpoints first (login/logout/page), unprotected
+app.use('/api/auth', authRouter);
+app.get('/auth', (_req: Request, res: Response) => res.redirect('/api/auth/page'));
+
+// Require authentication for everything else if password is configured
+app.use(authRequired);
+
 app.use('/api/transcribe', makeRateLimit(10, 60_000), transcribeRouter);
 app.use('/api/generate', makeRateLimit(15, 60_000), generateRouter);
 app.use('/api/improve', makeRateLimit(20, 60_000), improveRouter);

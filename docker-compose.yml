@@ -12,8 +12,9 @@ services:
       - OPENAI_STT_MODEL=whisper-1
       - PRINTER_MEDIA=iso_a4_210x297mm
       - OPENAI_TIMEOUT_MS=120000
+      - APP_PASSWORD= # Optional - password for accessing the app
     volumes:
-      - data:/data
+      - ./data:/data
     ports:
       - "3000:3000"
     healthcheck:
