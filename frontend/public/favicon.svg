@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FFB703" />
+      <stop offset="100%" stop-color="#FB8500" />
+    </linearGradient>
+  </defs>
+  <!-- Tło z zaokrąglonymi rogami -->
+  <rect x="32" y="32" width="448" height="448" rx="96" ry="96" fill="url(#g)"/>
+  
+  <!-- Kontener na treść ikony, przesunięty i wycentrowany -->
+  <g transform="translate(128,140)">
+
+    <!--
+      Ikona kredki narysowana w stylu konturowym (jak z kolorowanki).
+      Całość jest obrócona o -30 stopni i przeskalowana 1.5x wokół swojego środka.
+    -->
+    <g fill="none" stroke="#333" stroke-width="11" stroke-linecap="round" stroke-linejoin="round" transform="translate(128, 116) rotate(-30) scale(1.5) translate(-128, -116)">
+      
+      <!-- Główny kontur kredki: od dołu (L 88 211), do góry (L 88 61), 
+           przez czubek (Q 128 21 168 61), i z powrotem w dół (L 168 211 Z) -->
+      <path d="M 88 211 L 88 61 Q 128 21 168 61 L 168 211 Z" />
+      
+      <!-- Linie na papierowej owijce kredki -->
+      <path d="M 88 101 L 168 101" />
+      <path d="M 88 121 L 168 121" />
+    </g>
+    
+  </g>
+</svg>
