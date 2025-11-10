@@ -31,6 +31,30 @@ export const createSession = async (id?: string) => {
   return sessionId;
 };
 
+export const readMeta = async (id: string): Promise<any> => {
+  const metaPath = path.join(getSessionDir(id), 'meta.json');
+  try {
+    const raw = await fs.readFile(metaPath, 'utf-8');
+    return JSON.parse(raw);
+  } catch {
+    return { id };
+  }
+};
+
+const writeMeta = async (id: string, meta: any) => {
+  const dir = getSessionDir(id);
+  await ensureDir(dir);
+  const metaPath = path.join(dir, 'meta.json');
+  await fs.writeFile(metaPath, JSON.stringify(meta, null, 2));
+};
+
+export const updateMeta = async (id: string, patch: Record<string, any>) => {
+  const current = await readMeta(id);
+  const next = { ...current, ...patch };
+  await writeMeta(id, next);
+  return next;
+};
+
 export const saveAudio = async (id: string, buffer: Buffer, ext = 'webm') => {
   const dir = getSessionDir(id);
   await ensureDir(dir);
@@ -40,11 +64,8 @@ export const saveAudio = async (id: string, buffer: Buffer, ext = 'webm') => {
 };
 
 export const savePrompt = async (id: string, prompt: string) => {
-  const dir = getSessionDir(id);
-  await ensureDir(dir);
-  const promptPath = path.join(dir, 'prompt.txt');
-  await fs.writeFile(promptPath, prompt);
-  return promptPath;
+  await updateMeta(id, { prompt });
+  return path.join(getSessionDir(id), 'meta.json');
 };
 
 export const saveImageBuffer = async (id: string, buffer: Buffer, ext: typeof EXT_JPG | typeof EXT_PNG = 'png') => {
@@ -62,7 +83,6 @@ export const listHistory = async () => {
   const items = await Promise.all(dirs.map(async (id) => {
     const dir = getSessionDir(id);
     const metaPath = path.join(dir, 'meta.json');
-    const promptPath = path.join(dir, 'prompt.txt');
     const imageJpg = path.join(dir, FILE_IMAGE_JPG);
     const imagePng = path.join(dir, FILE_IMAGE_PNG);
     let meta: any = { id };
@@ -70,14 +90,16 @@ export const listHistory = async () => {
       const m = await fs.readFile(metaPath, 'utf-8');
       meta = JSON.parse(m);
     } catch {}
-    let prompt = '';
-    try { prompt = await fs.readFile(promptPath, 'utf-8'); } catch {}
+    // Only use meta.json; brak kompatybilności wstecznej
+    const prompt = meta.prompt || '';
+    const improvedPrompt = meta.improvedPrompt || '';
     const hasJpg = fsSync.existsSync(imageJpg);
     const hasPng = fsSync.existsSync(imagePng);
     return {
       id,
       createdAt: meta.createdAt || 0,
       prompt,
+      improvedPrompt: improvedPrompt || undefined,
       imageUrl: hasJpg ? `/files/${id}/${FILE_IMAGE_JPG}` : (hasPng ? `/files/${id}/${FILE_IMAGE_PNG}` : undefined),
     };
   }));
@@ -87,11 +109,8 @@ export const listHistory = async () => {
 };
 
 export const markPrinted = async (id: string) => {
-  const metaPath = path.join(getSessionDir(id), 'meta.json');
   try {
-    const m = JSON.parse(await fs.readFile(metaPath, 'utf-8'));
-    m.printedAt = Date.now();
-    await fs.writeFile(metaPath, JSON.stringify(m, null, 2));
+    await updateMeta(id, { printedAt: Date.now() });
   } catch (e) {
     logger.warn('Cannot mark printed for', id, e);
   }

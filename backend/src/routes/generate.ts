@@ -1,5 +1,5 @@
 import { Router, type Request, type Response } from 'express';
-import { savePrompt, saveImageBuffer, createSession, getSessionDir } from '../services/storage.js';
+import { saveImageBuffer, createSession, getSessionDir, readMeta, updateMeta } from '../services/storage.js';
 import { generateImage } from '../services/openai.js';
 import { logger } from '../utils/logger.js';
 import sharp from 'sharp';
@@ -24,7 +24,14 @@ generateRouter.post('/', async (req: Request, res: Response) => {
     if (!fs.existsSync(metaPath)) {
       await createSession(id);
     }
-    await savePrompt(id, prompt);
+    // Nie nadpisuj podstawowego promptu (pochodzi z transkrypcji).
+    // Jeśli meta.prompt istnieje i różni się od przekazanego promptu, zapisz jako improvedPrompt.
+    try {
+      const meta = await readMeta(id);
+      if (meta?.prompt && meta.prompt !== prompt) {
+        await updateMeta(id, { improvedPrompt: prompt });
+      }
+    } catch {}
     try {
       const pngBuffer = await generateImage(prompt);
       const source = pngBuffer;

@@ -55,6 +55,7 @@ export const App: React.FC = () => {
   const [errorText, setErrorText] = useState<string | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [configOpen, setConfigOpen] = useState(false);
+  const [promptInfoItem, setPromptInfoItem] = useState<HistoryItem | null>(null);
   const [runtimeConfig, setRuntimeConfig] = useState<RuntimeConfig | null>(null);
   const [needLogin, setNeedLogin] = useState<boolean>(false);
   const [loginPw, setLoginPw] = useState<string>('');
@@ -410,7 +411,7 @@ export const App: React.FC = () => {
         <Box component="aside" sx={{ width: 480, borderRight: 1, borderColor: 'divider', p: 2, overflow: 'auto' }}>
           <Typography variant="h6" gutterBottom>Historia</Typography>
           <List dense>
-            {history.map(item => (
+            {history.filter(item => !!item.imageUrl).map(item => (
               <React.Fragment key={item.id}>
                 <ListItem
                   alignItems="flex-start"
@@ -421,34 +422,51 @@ export const App: React.FC = () => {
                     primaryTypographyProps={{ variant: 'subtitle1' }}
                     secondaryTypographyProps={{ component: 'div' }}
                     primary={
-                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pr: 1 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pr: 1, gap: 1 }}>
                         <span>{new Date(item.createdAt).toLocaleString()}</span>
-                        <Tooltip title="Usuń kolorowankę">
-                          <IconButton
-                            edge="end"
-                            size="small"
-                            onClick={async (e) => {
-                              e.stopPropagation();
-                              try {
-                                await api.remove(item.id);
-                                if (selected?.id === item.id) setSelected(null);
-                                await refreshHistory();
-                              } catch (err) {
-                                console.error('Delete failed:', err);
-                                setStatus('error');
-                              }
-                            }}
-                            sx={{ p: 0.25, bgcolor: 'error.main', color: 'common.white', '&:hover': { bgcolor: 'error.dark' } }}
-                            aria-label="Usuń"
-                          >
-                            <DeleteIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                          {(item.prompt || item.improvedPrompt) && (
+                            <Tooltip title="Prompt" arrow>
+                              <IconButton
+                                edge="end"
+                                size="small"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setPromptInfoItem(item);
+                                }}
+                                sx={{ p: 0.25, bgcolor: 'info.main', color: 'common.white', '&:hover': { bgcolor: 'info.dark' } }}
+                                aria-label="Prompt"
+                              >
+                                <InfoOutlinedIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          )}
+                          <Tooltip title="Usuń kolorowankę">
+                            <IconButton
+                              edge="end"
+                              size="small"
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                try {
+                                  await api.remove(item.id);
+                                  if (selected?.id === item.id) setSelected(null);
+                                  await refreshHistory();
+                                } catch (err) {
+                                  console.error('Delete failed:', err);
+                                  setStatus('error');
+                                }
+                              }}
+                              sx={{ p: 0.25, bgcolor: 'error.main', color: 'common.white', '&:hover': { bgcolor: 'error.dark' } }}
+                              aria-label="Usuń"
+                            >
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        </Box>
                       </Box>
                     }
                     secondary={
                       <>
-                        <Typography variant="body2" color="text.primary" sx={{ mb: 0.5 }}>{item.prompt}</Typography>
                         {item.imageUrl && (
                           <Box sx={{ mt: 1, borderRadius: 2, border: 1, borderColor: 'divider', overflow: 'hidden' }}>
                             <Box component="img" src={item.imageUrl} alt="podgląd" loading="lazy" decoding="async" sx={{ width: '100%', height: 'auto', display: 'block' }} />
@@ -831,7 +849,7 @@ export const App: React.FC = () => {
           <DialogTitle>Historia</DialogTitle>
           <DialogContent dividers>
             <List dense>
-              {history.map(item => (
+              {history.filter(item => !!item.imageUrl).map(item => (
                 <React.Fragment key={item.id}>
                   <ListItem
                     alignItems="flex-start"
@@ -847,34 +865,51 @@ export const App: React.FC = () => {
                       primaryTypographyProps={{ variant: 'subtitle1' }}
                       secondaryTypographyProps={{ component: 'div' }}
                       primary={
-                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pr: 1 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pr: 1, gap: 1 }}>
                           <span>{new Date(item.createdAt).toLocaleString()}</span>
-                          <Tooltip title="Usuń kolorowankę">
-                            <IconButton
-                              edge="end"
-                              size="small"
-                              onClick={async (e) => {
-                                e.stopPropagation();
-                                try {
-                                  await api.remove(item.id);
-                                  if (selected?.id === item.id) setSelected(null);
-                                  await refreshHistory();
-                                } catch (err) {
-                                  console.error('Delete failed:', err);
-                                  setStatus('error');
-                                }
-                              }}
-                              sx={{ p: 0.25, bgcolor: 'error.main', color: 'common.white', '&:hover': { bgcolor: 'error.dark' } }}
-                              aria-label="Usuń"
-                            >
-                              <DeleteIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                            {(item.prompt || item.improvedPrompt) && (
+                              <Tooltip title="Prompt" arrow>
+                                <IconButton
+                                  edge="end"
+                                  size="small"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setPromptInfoItem(item);
+                                  }}
+                                  sx={{ p: 0.25, bgcolor: 'info.main', color: 'common.white', '&:hover': { bgcolor: 'info.dark' } }}
+                                  aria-label="Prompt"
+                                >
+                                  <InfoOutlinedIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                            )}
+                            <Tooltip title="Usuń kolorowankę">
+                              <IconButton
+                                edge="end"
+                                size="small"
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  try {
+                                    await api.remove(item.id);
+                                    if (selected?.id === item.id) setSelected(null);
+                                    await refreshHistory();
+                                  } catch (err) {
+                                    console.error('Delete failed:', err);
+                                    setStatus('error');
+                                  }
+                                }}
+                                sx={{ p: 0.25, bgcolor: 'error.main', color: 'common.white', '&:hover': { bgcolor: 'error.dark' } }}
+                                aria-label="Usuń"
+                              >
+                                <DeleteIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          </Box>
                         </Box>
                       }
                       secondary={
                         <>
-                          <Typography variant="body2" color="text.primary" sx={{ mb: 0.5 }}>{item.prompt}</Typography>
                           {item.imageUrl && (
                             <Box sx={{ mt: 1, borderRadius: 2, border: 1, borderColor: 'divider', overflow: 'hidden' }}>
                               <Box component="img" src={item.imageUrl} alt="podgląd" loading="lazy" decoding="async" sx={{ width: '100%', height: 'auto', display: 'block' }} />
@@ -894,6 +929,35 @@ export const App: React.FC = () => {
           </DialogActions>
         </Dialog>
       )}
+      {/* Prompt details modal */}
+      <Dialog open={!!promptInfoItem} onClose={() => setPromptInfoItem(null)} maxWidth="md" fullWidth>
+        <DialogTitle>Prompt</DialogTitle>
+        <DialogContent dividers>
+          {promptInfoItem && (
+            <Stack spacing={2}>
+              {promptInfoItem.prompt && (
+                <Box>
+                  <Typography variant="subtitle2" gutterBottom>Podstawowy prompt</Typography>
+                  <Box sx={{ p: 1, bgcolor: 'action.hover', borderRadius: 1, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                    {promptInfoItem.prompt}
+                  </Box>
+                </Box>
+              )}
+              {promptInfoItem.improvedPrompt && (
+                <Box>
+                  <Typography variant="subtitle2" gutterBottom>Ulepszony prompt</Typography>
+                  <Box sx={{ p: 1, bgcolor: 'action.hover', borderRadius: 1, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                    {promptInfoItem.improvedPrompt}
+                  </Box>
+                </Box>
+              )}
+            </Stack>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setPromptInfoItem(null)}>Zamknij</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

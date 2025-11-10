@@ -96,7 +96,7 @@ export const improvePrompt = async (original: string): Promise<string> => {
     return original;
   }
   const system = 'Jesteś asystentem, który ulepsza krótkie prompty do generowania czarno-białych kolorowanek (line art). Zwracaj wyłącznie ulepszony prompt, bez cudzysłowów, bez komentarzy.';
-  const user = `Ulepsz ten prompt tak, aby powstała kolorowanka dla dzieci: \n\n"${original}"\n\nWymagania: czarno-biała grafika liniowa, wyraźne (grubsze) kontury, brak tła, brak szarości i cieniowania, centralna kompozycja, przyjazny styl, dużo elementów do kolorowania.`;
+  const user = `Ulepsz ten prompt tak, aby powstała kolorowanka dla dzieci: \n\n"${original}"\n\nWymagania: czarno-biała grafika liniowa, wyraźne (grubsze) kontury, brak tła, brak szarości i cieniowania, przyjazny styl, dużo elementów do kolorowania.`;
   logger.info('OpenAI: improve prompt call', { original });
 
   const client = getClient();

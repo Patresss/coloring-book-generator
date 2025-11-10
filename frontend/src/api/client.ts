@@ -1,5 +1,5 @@
 import { signalAuthRequired } from './auth';
-export type HistoryItem = { id: string; createdAt: number; prompt: string; imageUrl?: string };
+export type HistoryItem = { id: string; createdAt: number; prompt: string; improvedPrompt?: string; imageUrl?: string };
 
 const parseTimeout = (v: unknown, fallback: number) => {
   const n = Number(v);

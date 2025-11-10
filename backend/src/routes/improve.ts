@@ -1,10 +1,10 @@
 import { Router, type Request, type Response } from 'express';
 import { improvePrompt } from '../services/openai.js';
-import { createSession, getSessionDir } from '../services/storage.js';
+import { createSession, updateMeta, getSessionDir } from '../services/storage.js';
 import { logger } from '../utils/logger.js';
+import { isValidId } from '../utils/validation.js';
 import fs from 'fs';
 import path from 'path';
-import { isValidId } from '../utils/validation.js';
 
 export const improveRouter = Router();
 
@@ -27,8 +27,7 @@ improveRouter.post('/', async (req: Request, res: Response) => {
     logger.info('Ulepszanie promptu: start', { id: sessionId, prompt });
     const improved = await improvePrompt(prompt);
     try {
-      const dir = getSessionDir(sessionId);
-      fs.writeFileSync(path.join(dir, 'prompt_improved.txt'), improved);
+      await updateMeta(sessionId, { improvedPrompt: improved });
     } catch {}
     res.json({ id: sessionId, improved });
   } catch (e: any) {
@@ -36,4 +35,3 @@ improveRouter.post('/', async (req: Request, res: Response) => {
     res.status(500).json({ error: e?.message || 'Improve error' });
   }
 });
-

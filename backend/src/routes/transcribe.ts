@@ -1,4 +1,5 @@
 import { Router, type Request, type Response } from 'express';
+import fs from 'fs/promises';
 import multer from 'multer';
 import path from 'path';
 import { createSession, saveAudio, savePrompt } from '../services/storage.js';
@@ -28,6 +29,8 @@ transcribeRouter.post('/', upload.single('audio'), async (req: Request, res: Res
     const ext = path.extname(req.file.originalname || '.webm').replace('.', '') || 'webm';
     const audioPath = await saveAudio(id, req.file.buffer, ext);
     const prompt = await transcribeAudio(audioPath);
+
+    try { await fs.unlink(audioPath); } catch {}
     logger.info('Transkrypcja: wynik', { id, prompt });
     await savePrompt(id, prompt);
     res.json({ id, prompt });
