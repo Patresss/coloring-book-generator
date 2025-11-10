@@ -47,6 +47,7 @@ jobs:
             ${{ env.REGISTRY }}/${{ steps.vars.outputs.owner }}/coloring-backend
           tags: |
             type=ref,event=tag
+            type=semver,pattern={{version}},value={{tag}}
             type=ref,event=branch
             type=sha
             type=raw,value=latest,enable={{is_default_branch}}
@@ -59,6 +60,7 @@ jobs:
             ${{ env.REGISTRY }}/${{ steps.vars.outputs.owner }}/coloring-frontend
           tags: |
             type=ref,event=tag
+            type=semver,pattern={{version}},value={{tag}}
             type=ref,event=branch
             type=sha
             type=raw,value=latest,enable={{is_default_branch}}
@@ -86,4 +88,3 @@ jobs:
           labels: ${{ steps.meta_frontend.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-
