@@ -434,7 +434,7 @@ export const App: React.FC = () => {
                                   e.stopPropagation();
                                   setPromptInfoItem(item);
                                 }}
-                                sx={{ p: 0.25, bgcolor: 'info.main', color: 'common.white', '&:hover': { bgcolor: 'info.dark' } }}
+                                sx={{ p: 0.25, bgcolor: 'common.white', color: 'info.main', '&:hover': { bgcolor: 'grey.100' } }}
                                 aria-label="Prompt"
                               >
                                 <InfoOutlinedIcon fontSize="small" />
@@ -456,7 +456,7 @@ export const App: React.FC = () => {
                                   setStatus('error');
                                 }
                               }}
-                              sx={{ p: 0.25, bgcolor: 'error.main', color: 'common.white', '&:hover': { bgcolor: 'error.dark' } }}
+                              sx={{ p: 0.25, bgcolor: 'common.white', color: 'error.main', '&:hover': { bgcolor: 'grey.100' } }}
                               aria-label="Usuń"
                             >
                               <DeleteIcon fontSize="small" />
@@ -877,7 +877,7 @@ export const App: React.FC = () => {
                                     e.stopPropagation();
                                     setPromptInfoItem(item);
                                   }}
-                                  sx={{ p: 0.25, bgcolor: 'info.main', color: 'common.white', '&:hover': { bgcolor: 'info.dark' } }}
+                                  sx={{ p: 0.25, bgcolor: 'common.white', color: 'info.main', '&:hover': { bgcolor: 'grey.100' } }}
                                   aria-label="Prompt"
                                 >
                                   <InfoOutlinedIcon fontSize="small" />
@@ -899,7 +899,7 @@ export const App: React.FC = () => {
                                     setStatus('error');
                                   }
                                 }}
-                                sx={{ p: 0.25, bgcolor: 'error.main', color: 'common.white', '&:hover': { bgcolor: 'error.dark' } }}
+                                sx={{ p: 0.25, bgcolor: 'common.white', color: 'error.main', '&:hover': { bgcolor: 'grey.100' } }}
                                 aria-label="Usuń"
                               >
                                 <DeleteIcon fontSize="small" />
