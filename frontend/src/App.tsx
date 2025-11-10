@@ -270,6 +270,38 @@ export const App: React.FC = () => {
     setProcessMode(null);
   };
 
+  // Auto-close modal and open image after all steps finish
+  useEffect(() => {
+    if (status !== 'done') return;
+    let cancelled = false;
+    (async () => {
+      try {
+        if (processMode !== 'printOnly') {
+          if (!selected && id) {
+            // Prefer existing state, else fetch freshly
+            const existing = history.find((h) => h.id === id);
+            if (existing) {
+              setSelected(existing);
+            } else {
+              try {
+                const items = await api.history();
+                const item = items.find((h) => h.id === id);
+                if (item && !cancelled) setSelected(item);
+              } catch {}
+            }
+          }
+        }
+      } finally {
+        if (!cancelled) {
+          setStatus('idle');
+          setProcessMode(null);
+        }
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status]);
+
   // Show ONLY the config error screen if env is missing
   if (runtimeConfig && runtimeConfig.missingEnv && runtimeConfig.missingEnv.length > 0) {
     return (
