@@ -360,7 +360,11 @@ export const App: React.FC = () => {
               </IconButton>
             </Tooltip>
           )}
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+          <Typography
+            variant="h6"
+            component="div"
+            sx={{ flexGrow: 1, lineHeight: { xs: 1.15, sm: 1.2 } }}
+          >
             Generator kolorowanek
           </Typography>
           {/* Unified icon-over-switch controls */}
