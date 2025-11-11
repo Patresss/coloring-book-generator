@@ -13,6 +13,7 @@ configRouter.get('/', (_req: Request, res: Response) => {
   res.json({
     openaiTimeoutMs: config.openaiTimeoutMs,
     imageModel: config.imageModel,
+    openaiImageQuality: config.openaiImageQuality,
     textModel: config.textModel,
     sttModel: config.sttModel,
     printerUri: config.printerUri,

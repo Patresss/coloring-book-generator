@@ -28,7 +28,7 @@ export const transcribeAudio = async (audioPath: string): Promise<string> => {
   return (resp as any).text || '';
 };
 
-export const generateImage = async (prompt: string): Promise<Buffer> => {
+export const generateImage = async (prompt: string, opts?: { qualityOverride?: string }): Promise<Buffer> => {
   if (!config.openaiApiKey) {
     throw new Error('Brak konfiguracji OPENAI_API_KEY');
   }
@@ -40,7 +40,7 @@ export const generateImage = async (prompt: string): Promise<Buffer> => {
     'dall-e-3': '1792x1024',
   };
   const size = MODEL_SIZE_MAP[model as keyof typeof MODEL_SIZE_MAP];
-  const quality = (config.openaiImageQuality || '').trim();
+  const quality = (opts?.qualityOverride || config.openaiImageQuality || '').trim();
   logger.info('OpenAI: image generation prompt', { original: prompt, composed: p, model, size: size ?? 'default', quality: quality || 'default' });
 
   const client = getClient();

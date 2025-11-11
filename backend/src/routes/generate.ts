@@ -15,10 +15,11 @@ generateRouter.post('/', async (req: Request, res: Response) => {
     if (!process.env.OPENAI_API_KEY) {
       return res.status(503).json({ error: 'Brak konfiguracji OPENAI_API_KEY – generowanie zablokowane.' });
     }
-    const { id, prompt } = req.body || {};
+    const { id, prompt, forceHighQuality, quality } = req.body || {};
     if (!id || !prompt) return res.status(400).json({ error: 'Brak id lub promptu' });
     if (!isValidId(id)) return res.status(400).json({ error: 'Nieprawidłowe id' });
-    logger.info('Generation: start', { id, prompt });
+    const qualityOverride: string | undefined = (typeof quality === 'string' && quality.trim()) ? String(quality).trim() : (forceHighQuality ? 'high' : undefined);
+    logger.info('Generation: start', { id, prompt, qualityOverride: qualityOverride || 'default' });
     const dir = getSessionDir(id);
     const metaPath = path.join(dir, 'meta.json');
     if (!fs.existsSync(metaPath)) {
@@ -33,7 +34,7 @@ generateRouter.post('/', async (req: Request, res: Response) => {
       }
     } catch {}
     try {
-      const pngBuffer = await generateImage(prompt);
+      const pngBuffer = await generateImage(prompt, { qualityOverride });
       const source = pngBuffer;
       const jpg = await sharp(source).flatten({ background: { r: 255, g: 255, b: 255 } }).jpeg({ quality: 95 }).toBuffer();
       const imgPath = await saveImageBuffer(id, jpg, EXT_JPG);
