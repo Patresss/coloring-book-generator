@@ -38,7 +38,7 @@ export const generateImage = async (subject: string, opts?: { qualityOverride?: 
   if (!config.openaiApiKey) {
     throw new Error('Brak konfiguracji OPENAI_API_KEY');
   }
-  const p = config.promptColoringBook + " '" + subject + "'";
+  const prompt = config.promptColoringBook + " '" + subject + "'";
   const model = config.imageModel || 'gpt-image-1';
   // Map model -> preferred size. If not present, omit size to use API default.
   const MODEL_SIZE_MAP: Record<string, string> = {
@@ -47,7 +47,7 @@ export const generateImage = async (subject: string, opts?: { qualityOverride?: 
   };
   const size = MODEL_SIZE_MAP[model as keyof typeof MODEL_SIZE_MAP];
   const quality = (opts?.qualityOverride || config.openaiImageQuality || '').trim();
-  logger.info('OpenAI: image generation prompt', { original: subject, composed: p, model, size: size ?? 'default', quality: quality || 'default' });
+  logger.info('OpenAI: image generation prompt', { original: subject, composed: prompt, model, size: size ?? 'default', quality: quality || 'default' });
 
   const client = getClient();
   // simple retry for transient errors (2 retries). Do NOT retry user errors (e.g., moderation).
@@ -58,7 +58,7 @@ export const generateImage = async (subject: string, opts?: { qualityOverride?: 
       const isGptImage1 = model === 'gpt-image-1';
       const result = await client.images.generate({
         model,
-        prompt: p,
+        prompt: prompt,
         ...(size ? { size } : {}),
         ...(isDalle3 ? { response_format: 'b64_json' } : {}),
         ...(quality ? { quality } : {}),
