@@ -1,5 +1,6 @@
 import fs from 'fs/promises';
 import fsSync from 'fs';
+import path from 'path';
 import OpenAI from 'openai';
 import { config } from '../config.js';
 import { logger } from '../utils/logger.js';
@@ -8,6 +9,11 @@ const delay = (ms: number) => new Promise((res) => setTimeout(res, ms));
 
 function getClient() {
   return new OpenAI({ apiKey: config.openaiApiKey, timeout: config.openaiTimeoutMs });
+}
+
+// For file uploads, use longer timeout (5 minutes) to avoid connection issues
+function getClientForFileUpload() {
+  return new OpenAI({ apiKey: config.openaiApiKey, timeout: 5 * 60 * 1000 });
 }
 
 export const transcribeAudio = async (audioPath: string): Promise<string> => {
@@ -32,7 +38,7 @@ export const generateImage = async (prompt: string, opts?: { qualityOverride?: s
   if (!config.openaiApiKey) {
     throw new Error('Brak konfiguracji OPENAI_API_KEY');
   }
-  const p = `Narysuj czarno-białą ilustrację do kolorowania (line art, wyraźne kontury, bez tła, brak szarości, brak cieniowania), temat: '${prompt}'. Styl przyjazny dla dzieci.`;
+  const p = `Narysuj czarno-białą ilustrację do kolorowania (line art, wyraźne kontury, bez tła, brak szarości, brak cieniowania), temat: '${prompt}'. Styl przyjazny dla dzieci. Nie dodawaj żadnego tekstu na obrazku, chyba ze jest to wprost wymagane przez prompt.`;
   const model = config.imageModel || 'gpt-image-1';
   // Map model -> preferred size. If not present, omit size to use API default.
   const MODEL_SIZE_MAP: Record<string, string> = {
@@ -105,4 +111,73 @@ export const improvePrompt = async (original: string): Promise<string> => {
 
   if (!improved) throw new Error('Brak treści ulepszonego promptu');
   return improved;
+};
+
+export const generateImageWithReferences = async (
+  prompt: string,
+  fileIds: string[],
+  opts?: { qualityOverride?: string }
+): Promise<Buffer> => {
+  if (!config.openaiApiKey) throw new Error('Brak konfiguracji OPENAI_API_KEY');
+  if (!fileIds.length) throw new Error('Brak fileIds do generowania');
+
+  const client = getClient();
+  const model = config.textModel;
+  const quality = (opts?.qualityOverride || config.openaiImageQuality || '').trim();
+  const p = `Narysuj czarno-białą ilustrację do kolorowania (line art, wyraźne kontury, bez tła, brak szarości, brak cieniowania), temat: '${prompt}'. Styl przyjazny dla dzieci. Nie dodawaj żadnego tekstu na obrazku, chyba ze jest to wprost wymagane przez prompt.`;
+  
+  const content: any[] = [
+    { type: 'input_text', text: p },
+    ...fileIds.map((id) => ({ type: 'input_image', file_id: id })),
+  ];
+  
+  logger.info('OpenAI: responses image generation (with references)', { prompt, referencesCount: fileIds.length, model, quality: quality || 'default' });
+  
+  const resp = await client.responses.create({
+    model,
+    input: [{ role: 'user', content }],
+    tools: [{ 
+      type: 'image_generation',
+      size: '1536x1024',
+      ...(quality ? { quality } : {}),
+    }],
+  } as any);
+
+  const imageGenCalls = (resp?.output || []).filter((o: any) => o.type === 'image_generation_call');
+  if (!imageGenCalls.length) {
+    logger.error('OpenAI: responses image missing image_generation_call in output');
+    throw new Error('Brak danych obrazu z API responses');
+  }
+  
+  const imgB64 = (imageGenCalls[0] as any)?.result;
+  if (!imgB64) {
+    logger.error('OpenAI: responses image missing result data');
+    throw new Error('Brak danych obrazu (responses)');
+  }
+  
+  return Buffer.from(imgB64, 'base64');
+};
+
+export const uploadReferenceFiles = async (fileNames: string[]): Promise<{ fileIds: string[] }> => {
+  if (!config.openaiApiKey) throw new Error('Brak konfiguracji OPENAI_API_KEY');
+  const client = getClientForFileUpload();
+  const referenceDir = config.referenceDir;
+  const ids: string[] = [];
+  
+  for (const name of fileNames) {
+    const filePath = `${referenceDir}/${name}`;
+    try {
+      const stream = fsSync.createReadStream(filePath);
+      const created = await client.files.create({
+        file: stream as any,
+        purpose: 'vision' as any,
+      });
+      ids.push((created as any).id);
+      logger.info('References: file uploaded', { name, fileId: (created as any).id });
+    } catch (e: any) {
+      logger.warn('References: upload failed for file, skipping', { name, error: String(e?.message || e) });
+    }
+  }
+  
+  return { fileIds: ids };
 };
