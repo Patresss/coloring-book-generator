@@ -48,7 +48,7 @@ import { auth, onAuthRequired } from './api/auth';
   import MusicNoteIcon from '@mui/icons-material/MusicNote';
   import VolumeOffIcon from '@mui/icons-material/VolumeOff';
 
-type Status = 'idle' | 'recording' | 'transcribing' | 'improving' | 'generating' | 'printing' | 'done' | 'error';
+type Status = 'idle' | 'recording' | 'transcribing' | 'improving' | 'referencing' | 'generating' | 'printing' | 'done' | 'error';
 
 export const App: React.FC = () => {
   const theme = useTheme();
@@ -83,6 +83,7 @@ export const App: React.FC = () => {
     return false;
   });
   const [improvedPrompt, setImprovedPrompt] = useState<string | null>(null);
+  const [foundReferences, setFoundReferences] = useState<string[] | null>(null);
   // Auto print state synced with URL param `auto-print` and persisted to localStorage
   const [autoPrint, setAutoPrint] = useState<boolean>(() => {
     const sp = new URLSearchParams(window.location.search);
@@ -213,6 +214,15 @@ export const App: React.FC = () => {
               console.error('Improve failed, fallback to original prompt:', e);
               setImprovedPrompt(null);
             }
+          }
+          // New step: detect references
+          setStatus('referencing');
+          try {
+            const { references } = await api.detectReferences(id, finalPrompt);
+            setFoundReferences(references || []);
+          } catch (e) {
+            // Reference detection error should stop the flow
+            throw e;
           }
           setStatus('generating');
           const gen = await api.generate(id, finalPrompt, { forceHighQuality });
@@ -361,6 +371,7 @@ export const App: React.FC = () => {
       const arr: string[] = [];
       if (includeTranscribeStep) arr.push('Transkrypcja');
       if (improveEnabled) arr.push('Ulepszanie promptu');
+      arr.push('Wyszukiwanie referencji');
       arr.push('Generowanie obrazu');
       if (autoPrint) arr.push('Drukowanie');
       return arr;
@@ -372,15 +383,14 @@ export const App: React.FC = () => {
       const idx = {
         transcribing: includeTranscribeStep ? i++ : -1,
         improving: improveEnabled ? (includeTranscribeStep ? i++ : i++) : -1,
-        generating: (includeTranscribeStep ? (improveEnabled ? i : i) : (improveEnabled ? i : i)),
-        printing: -1 as number,
-      };
-      // adjust generating index
-      idx.generating = i++;
-      if (autoPrint) idx.printing = i++;
+        referencing: i++,
+        generating: i++,
+        printing: autoPrint ? i++ : -1,
+      } as const;
 
       if (status === 'transcribing' && idx.transcribing >= 0) return idx.transcribing;
       if (status === 'improving' && idx.improving >= 0) return idx.improving;
+      if (status === 'referencing') return idx.referencing;
       if (status === 'generating') return idx.generating;
       if (status === 'printing' && idx.printing >= 0) return idx.printing;
       return steps.length;
@@ -438,6 +448,7 @@ export const App: React.FC = () => {
       setId(newId);
       setPrompt(text);
       setImprovedPrompt(null);
+      setFoundReferences(null);
       let finalPrompt = text;
       if (improveEnabled) {
         setStatus('improving');
@@ -446,6 +457,13 @@ export const App: React.FC = () => {
           setImprovedPrompt(improved);
           finalPrompt = improved;
         } catch {}
+      }
+      setStatus('referencing');
+      try {
+        const { references } = await api.detectReferences(newId, finalPrompt);
+        setFoundReferences(references || []);
+      } catch (e) {
+        throw e;
       }
       setStatus('generating');
       const gen = await api.generate(newId, finalPrompt, { forceHighQuality });
@@ -1116,10 +1134,18 @@ export const App: React.FC = () => {
                   </Box>
                 </Box>
               )}
+              {foundReferences != null && (
+                <Box sx={{ mt: 1.5 }}>
+                  <Typography variant="subtitle2" gutterBottom>Wybrane referencje</Typography>
+                  <Box sx={{ p: 1.5, bgcolor: 'action.hover', borderRadius: 1, fontFamily: 'monospace', whiteSpace: 'pre-wrap' }}>
+                    {foundReferences.length > 0 ? foundReferences.join(', ') : '— (brak)'}
+                  </Box>
+                </Box>
+              )}
             </Box>
           )}
           {/* Subtle progress bar while steps are running */}
-          {(status === 'transcribing' || status === 'improving' || status === 'generating' || status === 'printing') && (
+          {(status === 'transcribing' || status === 'improving' || status === 'referencing' || status === 'generating' || status === 'printing') && (
             <Box sx={{ mt: 1 }}>
               <Box sx={{ height: 4, bgcolor: 'action.selected', borderRadius: 999, overflow: 'hidden' }}>
                 <Box sx={{ width: '40%', height: '100%', bgcolor: 'primary.main', borderRadius: 999, animation: 'indeterminateSlide 1.6s ease-in-out infinite' }} />

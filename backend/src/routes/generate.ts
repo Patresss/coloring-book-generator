@@ -1,6 +1,8 @@
 import { Router, type Request, type Response } from 'express';
 import { saveImageBuffer, createSession, getSessionDir, readMeta, updateMeta } from '../services/storage.js';
 import { generateImage } from '../services/openai.js';
+// ...existing code...
+import { uploadReferenceFiles, generateImageWithReferences } from '../services/references.js';
 import { logger } from '../utils/logger.js';
 import sharp from 'sharp';
 import { EXT_JPG, FILE_IMAGE_JPG } from '../constants.js';
@@ -34,7 +36,28 @@ generateRouter.post('/', async (req: Request, res: Response) => {
       }
     } catch {}
     try {
-      const pngBuffer = await generateImage(prompt, { qualityOverride });
+      // Try reference-aware generation if references exist in meta
+      let pngBuffer: Buffer | null = null;
+      try {
+        const meta = await readMeta(id);
+        const refs: string[] = Array.isArray(meta?.references) ? meta.references : [];
+        if (refs.length > 0) {
+          const { fileIds, paths } = await uploadReferenceFiles(refs);
+          if (fileIds.length > 0) {
+            // Log all paths used in input_image
+            logger.info('Generation: using reference input_images', { id, files: paths });
+            pngBuffer = await generateImageWithReferences(prompt, fileIds, { qualityOverride });
+          } else {
+            logger.info('Generation: no valid reference fileIds after upload, fallback to non-reference generation', { id });
+          }
+        }
+      } catch (e) {
+        // Do not treat as fatal for generation; proceed without references
+        logger.warn('Generation: reference generation failed, fallback to standard', { id, error: String((e as any)?.message || e) });
+      }
+      if (!pngBuffer) {
+        pngBuffer = await generateImage(prompt, { qualityOverride });
+      }
       const source = pngBuffer;
       const jpg = await sharp(source).flatten({ background: { r: 255, g: 255, b: 255 } }).jpeg({ quality: 95 }).toBuffer();
       const imgPath = await saveImageBuffer(id, jpg, EXT_JPG);

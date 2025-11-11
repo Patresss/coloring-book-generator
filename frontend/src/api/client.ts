@@ -103,6 +103,9 @@ export const api = {
   async improve(id: string, prompt: string): Promise<{ id: string; improved: string }>{
     return postJson('/api/improve', { id, prompt }, OPENAI_TIMEOUT);
   },
+  async detectReferences(id: string, prompt: string): Promise<{ id: string; references: string[]; available: string[] }>{
+    return postJson('/api/references/detect', { id, prompt }, OPENAI_TIMEOUT);
+  },
   async print(id: string): Promise<{ jobId: string }>{
     return postJson('/api/print', { id });
   },

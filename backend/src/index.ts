@@ -12,6 +12,7 @@ import { configRouter } from './routes/config.js';
 import { improveRouter } from './routes/improve.js';
 import { authRequired } from './middleware/auth.js';
 import { authRouter } from './routes/auth.js';
+import { referencesRouter } from './routes/references.js';
 
 const app = express();
 
@@ -61,6 +62,7 @@ app.use(authRequired);
 app.use('/api/transcribe', makeRateLimit(10, 60_000), transcribeRouter);
 app.use('/api/generate', makeRateLimit(15, 60_000), generateRouter);
 app.use('/api/improve', makeRateLimit(20, 60_000), improveRouter);
+app.use('/api/references', makeRateLimit(20, 60_000), referencesRouter);
 app.use('/api/print', printRouter);
 app.use('/api/history', historyRouter);
 app.use('/api/config', configRouter);
