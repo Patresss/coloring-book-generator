@@ -1218,6 +1218,12 @@ export const App: React.FC = () => {
               </Box>
             </Box>
             <Box>
+              <Typography variant="subtitle2">OPENAI_IMAGE_REFERENCES_MODEL</Typography>
+              <Box sx={{ p: 1, bgcolor: 'action.hover', borderRadius: 1, fontFamily: 'monospace' }}>
+                {runtimeConfig?.imageReferencesModel || '—'}
+              </Box>
+            </Box>
+            <Box>
               <Typography variant="subtitle2">OPENAI_IMAGE_QUALITY</Typography>
               <Box sx={{ p: 1, bgcolor: 'action.hover', borderRadius: 1, fontFamily: 'monospace' }}>
                 {runtimeConfig?.openaiImageQuality || '—'}

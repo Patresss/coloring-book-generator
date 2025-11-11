@@ -3,17 +3,14 @@ services:
     image: ghcr.io/patresss/coloring-backend:latest
     container_name: coloring-backend
     environment:
-      - DATA_DIR=/data
-      - REFERENCE_DIR=/reference
       - NODE_ENV=production
       - OPENAI_API_KEY= # Your key sk-XXX
       - PRINTER_URI= # ipp://<IP_or_name>/ipp/print
       - OPENAI_IMAGE_MODEL=gpt-image-1
-      - OPENAI_TEXT_MODEL=gpt-4.1-nano
+      - OPENAI_TEXT_MODEL=gpt-4.1-mini
       - OPENAI_STT_MODEL=whisper-1
-      - OPENAI_RESPONSES_IMAGE_MODEL=gpt-4o-mini # for responses image generation with references
       - PRINTER_MEDIA=iso_a4_210x297mm
-      - OPENAI_TIMEOUT_MS=120000
+      - OPENAI_TIMEOUT_MS=240000
       - APP_PASSWORD= # Optional - password for accessing the app
     volumes:
       - ./data:/data

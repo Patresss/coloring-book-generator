@@ -30,6 +30,7 @@ export const loadConfig = async () => {
 export type RuntimeConfig = {
   openaiTimeoutMs: number;
   imageModel?: string;
+  imageReferencesModel?: string;
   openaiImageQuality?: string;
   textModel?: string;
   sttModel?: string;

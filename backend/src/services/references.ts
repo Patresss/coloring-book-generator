@@ -3,6 +3,7 @@ import path from 'path';
 import OpenAI from 'openai';
 import { config } from '../config.js';
 import { logger } from '../utils/logger.js';
+import * as constants from '../constants.js';
 
 const IMAGE_EXTS = new Set(['.jpg', '.jpeg', '.png', '.webp']);
 
@@ -34,8 +35,7 @@ export const detectReferences = async (userPrompt: string): Promise<ReferenceDet
   }
   if (available.length === 0) return { references: [], available };
 
-  const system = 'Jesteś pomocnikiem. Na podstawie listy plików referencyjnych wybierz które pasują do opisu. Zwróć WYŁĄCZNIE poprawny JSON.';
-  const instruction = `Dostępne pliki referencyjne (nazwa pliku):\n${available.join('\n')}\n\nOpis użytkownika:\n${userPrompt}\n\nZwróć JSON postaci: { "references": ["plik1.jpg", "plik2.png"] } — tylko istniejące nazwy. Możesz zwrócić pustą listę.`;
+  const userMessage = config.promptDetectReferences + ". Prompt: '" + userPrompt + "'. Files: '" +  available.join('\n') + "'.";
 
   const client = getClient();
   logger.info('References: detect start', { count: available.length });
@@ -44,8 +44,7 @@ export const detectReferences = async (userPrompt: string): Promise<ReferenceDet
     const resp = await client.chat.completions.create({
       model: config.textModel || 'gpt-4o-mini',
       messages: [
-        { role: 'system', content: system },
-        { role: 'user', content: instruction },
+        { role: 'user', content: userMessage },
       ],
       temperature: 0,
     } as any);

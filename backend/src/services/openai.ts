@@ -34,11 +34,11 @@ export const transcribeAudio = async (audioPath: string): Promise<string> => {
   return (resp as any).text || '';
 };
 
-export const generateImage = async (prompt: string, opts?: { qualityOverride?: string }): Promise<Buffer> => {
+export const generateImage = async (subject: string, opts?: { qualityOverride?: string }): Promise<Buffer> => {
   if (!config.openaiApiKey) {
     throw new Error('Brak konfiguracji OPENAI_API_KEY');
   }
-  const p = `Narysuj czarno-białą ilustrację do kolorowania (line art, wyraźne kontury, bez tła, brak szarości, brak cieniowania), temat: '${prompt}'. Styl przyjazny dla dzieci. Nie dodawaj żadnego tekstu na obrazku, chyba ze jest to wprost wymagane przez prompt.`;
+  const p = config.promptColoringBook + " '" + subject + "'";
   const model = config.imageModel || 'gpt-image-1';
   // Map model -> preferred size. If not present, omit size to use API default.
   const MODEL_SIZE_MAP: Record<string, string> = {
@@ -47,7 +47,7 @@ export const generateImage = async (prompt: string, opts?: { qualityOverride?: s
   };
   const size = MODEL_SIZE_MAP[model as keyof typeof MODEL_SIZE_MAP];
   const quality = (opts?.qualityOverride || config.openaiImageQuality || '').trim();
-  logger.info('OpenAI: image generation prompt', { original: prompt, composed: p, model, size: size ?? 'default', quality: quality || 'default' });
+  logger.info('OpenAI: image generation prompt', { original: subject, composed: p, model, size: size ?? 'default', quality: quality || 'default' });
 
   const client = getClient();
   // simple retry for transient errors (2 retries). Do NOT retry user errors (e.g., moderation).
@@ -86,8 +86,7 @@ export const improvePrompt = async (original: string): Promise<string> => {
     // Fallback for local dev: return original prompt
     return original;
   }
-  const system = 'Jesteś asystentem, który ulepsza krótkie prompty do generowania kolorowanek (line art). Zwracaj wyłącznie ulepszony prompt, bez cudzysłowów, bez komentarzy. Ulepszony prompt ma dotyczyć tylko zawartości kolorowanki dla dzieci, . Wiemy jak odpowiednio przygotować kolrowanke';
-  const user = `Ulepsz ten prompt tak, aby powstała kolorowanka dla dzieci: \n\n"${original}"\n\n = przyjazny styl, dużo elementów do kolorowania.`;
+  const userPrompt = config.promptImprove + " '" + original + "'";
   logger.info('OpenAI: improve prompt call', { original });
 
   const client = getClient();
@@ -98,8 +97,7 @@ export const improvePrompt = async (original: string): Promise<string> => {
     const cc = await client.chat.completions.create({
       model: chatModel,
       messages: [
-        { role: 'system', content: system },
-        { role: 'user', content: user },
+        { role: 'user', content: userPrompt },
       ],
     } as any);
     improved = (cc as any)?.choices?.[0]?.message?.content?.trim?.();
@@ -122,9 +120,9 @@ export const generateImageWithReferences = async (
   if (!fileIds.length) throw new Error('Brak fileIds do generowania');
 
   const client = getClient();
-  const model = config.textModel;
+  const model = config.imageReferencesModel;
   const quality = (opts?.qualityOverride || config.openaiImageQuality || '').trim();
-  const p = `Narysuj czarno-białą ilustrację do kolorowania (line art, wyraźne kontury, bez tła, brak szarości, brak cieniowania), temat: '${prompt}'. Styl przyjazny dla dzieci. Nie dodawaj żadnego tekstu na obrazku, chyba ze jest to wprost wymagane przez prompt.`;
+  const p = config.promptColoringBook.replace('{{prompt}}', prompt);
   
   const content: any[] = [
     { type: 'input_text', text: p },
