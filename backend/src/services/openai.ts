@@ -112,7 +112,7 @@ export const improvePrompt = async (original: string): Promise<string> => {
 };
 
 export const generateImageWithReferences = async (
-  prompt: string,
+  subject: string,
   fileIds: string[],
   opts?: { qualityOverride?: string }
 ): Promise<Buffer> => {
@@ -122,14 +122,14 @@ export const generateImageWithReferences = async (
   const client = getClient();
   const model = config.imageReferencesModel;
   const quality = (opts?.qualityOverride || config.openaiImageQuality || '').trim();
-  const p = config.promptColoringBook.replace('{{prompt}}', prompt);
+  const fullPrompt = config.promptColoringBook + ": '" + subject + "'";
   
   const content: any[] = [
-    { type: 'input_text', text: p },
+    { type: 'input_text', text: fullPrompt },
     ...fileIds.map((id) => ({ type: 'input_image', file_id: id })),
   ];
   
-  logger.info('OpenAI: responses image generation (with references)', { prompt, referencesCount: fileIds.length, model, quality: quality || 'default' });
+  logger.info('OpenAI: responses image generation (with references)', { fullPrompt, referencesCount: fileIds.length, model, quality: quality || 'default' });
   
   const resp = await client.responses.create({
     model,

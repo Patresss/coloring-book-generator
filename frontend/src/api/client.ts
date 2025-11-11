@@ -45,7 +45,7 @@ export const getConfig = async (): Promise<RuntimeConfig> => {
   return res.json();
 };
 
-const withTimeout = async <T>(fn: (signal: AbortSignal) => Promise<T>, ms = 30000): Promise<T> => {
+const withTimeout = async <T>(fn: (signal: AbortSignal) => Promise<T>, ms = 240000): Promise<T> => {
   const ac = new AbortController();
   const t = setTimeout(() => ac.abort(), ms);
   try {
