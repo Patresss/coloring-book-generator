@@ -6,6 +6,7 @@ import { auth, onAuthRequired } from './api/auth';
     Toolbar,
     Typography,
     Box,
+    Link,
     List,
     ListItem,
     ListItemText,
@@ -327,6 +328,27 @@ export const App: React.FC = () => {
     return true;
   });
   const [ideasVisible, setIdeasVisible] = useState<boolean>(true);
+  // Geometry for suggestion ring on different screen sizes
+  const [ring, setRing] = useState<{ radius: number; item: number; emoji: number }>(() => ({
+    radius: isMobile ? 150 : 200,
+    item: isMobile ? 72 : 88,
+    emoji: isMobile ? 30 : 34,
+  }));
+  useEffect(() => {
+    const recalc = () => {
+      const minDim = Math.min(window.innerWidth, window.innerHeight);
+      const baseR = isMobile ? 150 : 200;
+      const item = minDim < 360 ? (isMobile ? 56 : 72) : (isMobile ? 72 : 88);
+      const padding = 16; // keep inside viewport
+      const maxR = Math.floor(minDim / 2) - Math.floor(item / 2) - padding;
+      const radius = Math.max(80, Math.min(baseR, maxR));
+      const emoji = item <= 56 ? (isMobile ? 22 : 26) : (isMobile ? 30 : 34);
+      setRing({ radius, item, emoji });
+    };
+    recalc();
+    window.addEventListener('resize', recalc);
+    return () => window.removeEventListener('resize', recalc);
+  }, [isMobile]);
   // Whether to show the Transkrypcja step in the modal for this run
   const [includeTranscribeStep, setIncludeTranscribeStep] = useState<boolean>(false);
   // Persist child-friendly toggles (place after state declarations)
@@ -975,7 +997,7 @@ export const App: React.FC = () => {
                   const randomItem = catalog.find((it: any) => it.random)!;
                   const shuffled = [...pool].sort(() => Math.random() - 0.5);
                   const items = [...shuffled.slice(0, 9), randomItem];
-                  const radius = isMobile ? 150 : 200;
+                  const radius = ring.radius;
                   return (
                     <>
                       {/* Spinning ring wrapper (very slow); pauses on hover */}
@@ -985,9 +1007,8 @@ export const App: React.FC = () => {
                         const x = Math.cos(angle) * radius;
                         const y = Math.sin(angle) * radius;
                         return (
-                          <Tooltip title={it.label} arrow>
+                          <Tooltip key={`${it.label}-${idx}`} title={it.label} arrow>
                           <Box
-                            key={it.label}
                             onClick={() => {
                               const prompt = (it as any).random
                                 ? 'Wymyśl dla dziecka kreatywną scenę — losowy temat'
@@ -1001,8 +1022,8 @@ export const App: React.FC = () => {
                               left: `calc(50% + ${x}px)`,
                               top: `calc(50% + ${y}px)`,
                               transform: 'translate(-50%, -50%)',
-                              width: { xs: 72, sm: 88 },
-                              height: { xs: 72, sm: 88 },
+                              width: ring.item,
+                              height: ring.item,
                               borderRadius: '50%',
                               bgcolor: '#FFB703',
                               color: 'primary.contrastText',
@@ -1017,7 +1038,7 @@ export const App: React.FC = () => {
                               '&:active': { transform: 'translate(-50%, -50%) scale(0.96)' },
                             }}
                            >
-                             <Box sx={{ fontSize: isMobile ? 30 : 34, lineHeight: 1, animation: 'slowSpinReverse 80s linear infinite' }} component="span">{it.icon}</Box>
+                             <Box sx={{ fontSize: ring.emoji, lineHeight: 1, animation: 'slowSpinReverse 80s linear infinite' }} component="span">{it.icon}</Box>
                            </Box>
                            </Tooltip>
                          );
@@ -1153,6 +1174,16 @@ export const App: React.FC = () => {
       <Dialog open={configOpen} onClose={() => setConfigOpen(false)} fullWidth maxWidth="sm">
         <DialogTitle>Konfiguracja</DialogTitle>
         <DialogContent dividers>
+          <Box>
+            <Typography variant="subtitle2" gutterBottom>Więcej szczegółów i kod źródłowy</Typography>
+            <Typography variant="body2" color="text.secondary">
+              Zobacz projekt na
+              {' '}
+              <Link href="https://github.com/Patresss/coloring-book-generator" target="_blank" rel="noopener noreferrer">GitHub</Link>
+              {' '}— instrukcje, zmiany i źródła.
+            </Typography>
+          </Box>
+          <Divider sx={{ my: 2 }} />
           <Stack spacing={1.5} sx={{ mt: 1 }}>
             <Box>
               <Typography variant="subtitle2">OPENAI_IMAGE_MODEL</Typography>
