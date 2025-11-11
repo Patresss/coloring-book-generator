@@ -24,14 +24,14 @@ improveRouter.post('/', async (req: Request, res: Response) => {
         await createSession(sessionId);
       }
     }
-    logger.info('Ulepszanie promptu: start', { id: sessionId, prompt });
+    logger.info('Prompt improvement: start', { id: sessionId, prompt });
     const improved = await improvePrompt(prompt);
     try {
       await updateMeta(sessionId, { improvedPrompt: improved });
     } catch {}
     res.json({ id: sessionId, improved });
   } catch (e: any) {
-    logger.error('Ulepszanie promptu: błąd', e);
+    logger.error('Prompt improvement: error', e);
     res.status(500).json({ error: e?.message || 'Improve error' });
   }
 });

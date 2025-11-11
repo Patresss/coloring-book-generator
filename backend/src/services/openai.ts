@@ -40,7 +40,8 @@ export const generateImage = async (prompt: string): Promise<Buffer> => {
     'dall-e-3': '1792x1024',
   };
   const size = MODEL_SIZE_MAP[model as keyof typeof MODEL_SIZE_MAP];
-  logger.info('OpenAI: image generation prompt', { original: prompt, composed: p, model, size: size ?? 'default' });
+  const quality = (config.openaiImageQuality || '').trim();
+  logger.info('OpenAI: image generation prompt', { original: prompt, composed: p, model, size: size ?? 'default', quality: quality || 'default' });
 
   const client = getClient();
   // simple retry for transient errors (2 retries). Do NOT retry user errors (e.g., moderation).
@@ -54,8 +55,11 @@ export const generateImage = async (prompt: string): Promise<Buffer> => {
         prompt: p,
         ...(size ? { size } : {}),
         ...(isDalle3 ? { response_format: 'b64_json' } : {}),
-        ...(isGptImage1 ? { quality: 'high' } : {}),
+        ...(quality ? { quality } : {}),
+        ...(isGptImage1 ? { background: 'transparent' } : {}),
       } as any);
+      logger.info('Image generated', { prompt });
+
       const b64 = (result as any)?.data?.[0]?.b64_json;
       if (!b64) throw new Error('Brak danych obrazu z OpenAI');
       return Buffer.from(b64, 'base64');
@@ -66,7 +70,6 @@ export const generateImage = async (prompt: string): Promise<Buffer> => {
       const status = e?.status as number | undefined;
       const isTransient = status === 429 || (status !== undefined && status >= 500);
       if (!isTransient) throw e;
-      if (attempt < 2) await delay(500 * Math.pow(2, attempt));
     }
   }
   throw lastErr || new Error('OpenAI image failed');
@@ -96,9 +99,9 @@ export const improvePrompt = async (original: string): Promise<string> => {
     improved = (cc as any)?.choices?.[0]?.message?.content?.trim?.();
   } catch (e: any) {
       const msg = String(e?.message || e);
-      logger.error('Error during finding the improved prompt', { msg });
+      logger.error('Error while generating improved prompt', { msg });
   }
-  logger.info('Ulepszony promot: ', { improved });
+  logger.info('Improved prompt', { improved });
 
   if (!improved) throw new Error('Brak treści ulepszonego promptu');
   return improved;

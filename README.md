@@ -41,6 +41,7 @@ services:
       - OPENAI_API_KEY=sk-... # Your API Key
       - PRINTER_URI=ipp://<host-or-ip>/ipp/print # Your printer url
       - OPENAI_IMAGE_MODEL=gpt-image-1
+      - OPENAI_IMAGE_QUALITY=medium # Optional: quality passed to image API (e.g., low, medium, high, hd)
       - OPENAI_TEXT_MODEL=gpt-5-mini
       - OPENAI_STT_MODEL=whisper-1
       - OPENAI_TIMEOUT_MS=120000

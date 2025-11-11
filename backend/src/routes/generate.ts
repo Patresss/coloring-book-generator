@@ -18,7 +18,7 @@ generateRouter.post('/', async (req: Request, res: Response) => {
     const { id, prompt } = req.body || {};
     if (!id || !prompt) return res.status(400).json({ error: 'Brak id lub promptu' });
     if (!isValidId(id)) return res.status(400).json({ error: 'Nieprawidłowe id' });
-    logger.info('Generowanie: start', { id, prompt });
+    logger.info('Generation: start', { id, prompt });
     const dir = getSessionDir(id);
     const metaPath = path.join(dir, 'meta.json');
     if (!fs.existsSync(metaPath)) {
@@ -37,18 +37,18 @@ generateRouter.post('/', async (req: Request, res: Response) => {
       const source = pngBuffer;
       const jpg = await sharp(source).flatten({ background: { r: 255, g: 255, b: 255 } }).jpeg({ quality: 95 }).toBuffer();
       const imgPath = await saveImageBuffer(id, jpg, EXT_JPG);
-      logger.info('Generowanie: zapisano obraz', { id, path: imgPath });
+      logger.info('Generation: image saved', { id, path: imgPath });
       res.json({ imageUrl: `/files/${id}/${FILE_IMAGE_JPG}`, thumbUrl: `/files/${id}/${FILE_IMAGE_JPG}`, path: imgPath });
     } catch (e: any) {
       const msg = String(e?.message || e);
       if (msg.includes('moderation_blocked') || msg.toLowerCase().includes('safety system')) {
-        logger.warn('Generowanie: odrzucone przez AI', { id, error: msg });
+        logger.warn('Generation: rejected by AI', { id, error: msg });
         return res.status(400).send('Żądanie zostało zablokowane przez system bezpieczeństwa OpenAI. Zmień prompt i spróbuj ponownie.');
       }
       throw e;
     }
   } catch (e: any) {
-    logger.error('Generowanie: błąd', e);
+    logger.error('Generation: error', e);
     res.status(500).json({ error: e?.message || 'Generate error' });
   }
 });
