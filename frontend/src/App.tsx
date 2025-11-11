@@ -43,6 +43,9 @@ import { auth, onAuthRequired } from './api/auth';
   import CelebrationIcon from '@mui/icons-material/Celebration';
   import { AnimatedBackground } from './components/AnimatedBackground';
   import { Confetti } from './components/Confetti';
+  import { Mascot } from './components/Mascot';
+  import MusicNoteIcon from '@mui/icons-material/MusicNote';
+  import VolumeOffIcon from '@mui/icons-material/VolumeOff';
 
 type Status = 'idle' | 'recording' | 'transcribing' | 'improving' | 'generating' | 'printing' | 'done' | 'error';
 
@@ -151,8 +154,35 @@ export const App: React.FC = () => {
     try { setHistory(await api.history()); } catch { /* ignore */ }
   };
 
+  // Lightweight SFX (no external assets)
+  const playTone = (freq: number, duration = 0.12) => {
+    try {
+      const Ctx: any = (window as any).AudioContext || (window as any).webkitAudioContext;
+      if (!Ctx) return;
+      const ctx = new Ctx();
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = 'sine';
+      o.frequency.value = freq;
+      o.connect(g);
+      g.connect(ctx.destination);
+      const t0 = ctx.currentTime;
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(0.2, t0 + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + duration);
+      o.start();
+      o.stop(t0 + duration + 0.02);
+    } catch {}
+  };
+  const sfxClick = () => { if (sfxEnabled) playTone(420, 0.08); };
+  const sfxSuccess = () => { if (sfxEnabled) { playTone(660, 0.09); setTimeout(() => playTone(880, 0.12), 90); } };
+  const sfxError = () => { if (sfxEnabled) { playTone(260, 0.1); setTimeout(() => playTone(200, 0.16), 110); } };
+
   const startRecording = async () => {
     try {
+      sfxClick();
+      setIdeasVisible(false);
+      setIncludeTranscribeStep(true);
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const mr = new MediaRecorder(stream, { mimeType: 'audio/webm' });
       chunksRef.current = [];
@@ -210,6 +240,7 @@ export const App: React.FC = () => {
       console.error(e);
       setErrorText('Brak uprawnień do mikrofonu lub problem z nagrywaniem.');
       setStatus('error');
+      sfxError();
     }
   };
 
@@ -233,7 +264,36 @@ export const App: React.FC = () => {
     setStatus('idle');
   };
 
+  // When returning to idle, show ideas again
+  useEffect(() => {
+    if (status === 'idle') setIdeasVisible(true);
+  }, [status]);
+
+  // Can start recording?
   const canRecord = canGenerate && (status === 'idle' || status === 'error' || status === 'done');
+
+  // Spacebar control: toggle recording (start/stop)
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.code !== 'Space' && e.key !== ' ') return;
+      // Avoid when typing in inputs or editable elements
+      const el = document.activeElement as HTMLElement | null;
+      const tag = (el?.tagName || '').toLowerCase();
+      const isEditable = !!(el && (el.isContentEditable || tag === 'input' || tag === 'textarea' || tag === 'select'));
+      if (isEditable) return;
+      // Prevent page scroll
+      e.preventDefault();
+      if (status === 'recording') {
+        stopRecording();
+      } else if (canRecord) {
+        // Only start if not already busy
+        startRecording();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [status, canRecord]);
+
   const pulse = keyframes`
     0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239,71,111, 0.4); }
     70% { transform: scale(1.04); box-shadow: 0 0 0 18px rgba(239,71,111, 0); }
@@ -258,11 +318,26 @@ export const App: React.FC = () => {
   `;
 
   const [confettiKey, setConfettiKey] = useState<number | null>(null);
+  const [sfxEnabled, setSfxEnabled] = useState<boolean>(() => {
+    try { const v = localStorage.getItem('sfxEnabled'); if (v != null) return v === 'true'; } catch {}
+    return true;
+  });
+  const [tipsEnabled, setTipsEnabled] = useState<boolean>(() => {
+    try { const v = localStorage.getItem('kidTips'); if (v != null) return v === 'true'; } catch {}
+    return true;
+  });
+  const [ideasVisible, setIdeasVisible] = useState<boolean>(true);
+  // Whether to show the Transkrypcja step in the modal for this run
+  const [includeTranscribeStep, setIncludeTranscribeStep] = useState<boolean>(false);
+  // Persist child-friendly toggles (place after state declarations)
+  useEffect(() => { try { localStorage.setItem('sfxEnabled', String(sfxEnabled)); } catch {} }, [sfxEnabled]);
+  useEffect(() => { try { localStorage.setItem('kidTips', String(tipsEnabled)); } catch {} }, [tipsEnabled]);
 
   const steps = processMode === 'printOnly'
     ? ['Drukowanie']
     : (() => {
-      const arr: string[] = ['Transkrypcja'];
+      const arr: string[] = [];
+      if (includeTranscribeStep) arr.push('Transkrypcja');
       if (improveEnabled) arr.push('Ulepszanie promptu');
       arr.push('Generowanie obrazu');
       if (autoPrint) arr.push('Drukowanie');
@@ -271,17 +346,22 @@ export const App: React.FC = () => {
   const activeStep = processMode === 'printOnly'
     ? (status === 'printing' ? 0 : steps.length)
     : (() => {
-      if (status === 'transcribing') return 0;
-      if (improveEnabled) {
-        if (status === 'improving') return 1;
-        if (status === 'generating') return 2;
-        if (autoPrint && status === 'printing') return 3;
-        return steps.length;
-      } else {
-        if (status === 'generating') return 1;
-        if (autoPrint && status === 'printing') return 2;
-        return steps.length;
-      }
+      let i = 0;
+      const idx = {
+        transcribing: includeTranscribeStep ? i++ : -1,
+        improving: improveEnabled ? (includeTranscribeStep ? i++ : i++) : -1,
+        generating: (includeTranscribeStep ? (improveEnabled ? i : i) : (improveEnabled ? i : i)),
+        printing: -1 as number,
+      };
+      // adjust generating index
+      idx.generating = i++;
+      if (autoPrint) idx.printing = i++;
+
+      if (status === 'transcribing' && idx.transcribing >= 0) return idx.transcribing;
+      if (status === 'improving' && idx.improving >= 0) return idx.improving;
+      if (status === 'generating') return idx.generating;
+      if (status === 'printing' && idx.printing >= 0) return idx.printing;
+      return steps.length;
     })();
 
   const handleCloseDialog = async () => {
@@ -297,6 +377,7 @@ export const App: React.FC = () => {
   useEffect(() => {
     if (status !== 'done') return;
     setConfettiKey(Date.now());
+    sfxSuccess();
     let cancelled = false;
     (async () => {
       try {
@@ -325,6 +406,40 @@ export const App: React.FC = () => {
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status]);
+
+  // Quick ideas generator function
+  const generateFromIdea = async (text: string) => {
+    try {
+      const newId = String(Date.now());
+      setProcessMode('full');
+      setIncludeTranscribeStep(false);
+      setId(newId);
+      setPrompt(text);
+      setImprovedPrompt(null);
+      let finalPrompt = text;
+      if (improveEnabled) {
+        setStatus('improving');
+        try {
+          const { improved } = await api.improve(newId, text);
+          setImprovedPrompt(improved);
+          finalPrompt = improved;
+        } catch {}
+      }
+      setStatus('generating');
+      const gen = await api.generate(newId, finalPrompt, { forceHighQuality });
+      setImageUrl(gen.imageUrl);
+      if (autoPrint) {
+        setStatus('printing');
+        try { await api.print(newId); } catch {}
+      }
+      setStatus('done');
+      await refreshHistory();
+    } catch (e: any) {
+      console.error('Idea generation failed', e);
+      setErrorText(e?.message || 'Wystąpił błąd podczas generowania.');
+      setStatus('error');
+    }
+  };
 
   // Show ONLY the config error screen if env is missing
   if (runtimeConfig && runtimeConfig.missingEnv && runtimeConfig.missingEnv.length > 0) {
@@ -466,6 +581,16 @@ export const App: React.FC = () => {
                     />
                   </Box>
                 </Tooltip>
+                <Tooltip title={sfxEnabled ? 'Dźwięki włączone' : 'Dźwięki wyłączone'} arrow>
+                  <IconButton
+                    size="small"
+                    sx={{ ml: 1.5, color: 'common.white' }}
+                    onClick={() => setSfxEnabled(v => !v)}
+                    aria-label="Dźwięki"
+                  >
+                    {sfxEnabled ? <MusicNoteIcon fontSize="small" /> : <VolumeOffIcon fontSize="small" />}
+                  </IconButton>
+                </Tooltip>
                 <Tooltip title="Konfiguracja" arrow>
                   <IconButton
                     size="small"
@@ -604,6 +729,7 @@ export const App: React.FC = () => {
                       <IconButton
                         onClick={async () => {
                           try {
+                            setIncludeTranscribeStep(false);
                             setProcessMode('full');
                             setStatus('generating');
                             setPrompt(selected.prompt);
@@ -687,6 +813,7 @@ export const App: React.FC = () => {
                       <IconButton
                         onClick={async () => {
                           try {
+                            setIncludeTranscribeStep(false);
                             setProcessMode('full');
                             setStatus('generating');
                             setPrompt(selected.prompt);
@@ -761,7 +888,9 @@ export const App: React.FC = () => {
             </Box>
           ) : (
             <Stack spacing={2} alignItems="center">
-              <Fab
+              <Box sx={{ position: 'relative', display: 'inline-grid' }}>
+                {/* Mic button */}
+                <Fab
                 aria-label="Nagraj prompt głosowy"
                 color="error"
                 size="large"
@@ -779,7 +908,128 @@ export const App: React.FC = () => {
                 onClick={canRecord ? startRecording : undefined}
               >
                 <MicIcon sx={{ fontSize: { xs: 36, sm: 56 } }} />
-              </Fab>
+                </Fab>
+
+                {/* Idea icons around mic (emoji-only) */}
+                {ideasVisible && status === 'idle' && (() => {
+                  const catalog = [
+                    { icon: '🌈', label: 'Tęcze', prompt: 'Tęcze z 7 paskami na kazdy kolor' },
+                    { icon: '🦄', label: 'Jednorożce', prompt: 'Jednorożce w magicznym lesie' },
+                    { icon: '🦁', label: 'Zwierzęta w zoo', prompt: 'Lew, żyrafa i słoń w zoo' },
+                    { icon: '🐶', label: 'Pieski', prompt: 'Pieski bawiące się piłką' },
+                    { icon: '🐱', label: 'Kotki', prompt: 'Kotki śpiące na poduszkach' },
+                    { icon: '👗', label: 'Lalki', prompt: 'Lalki w stylu Barbie w modnych strojach i z długimi włosami' },
+                    { icon: '🚗', label: 'Samochody', prompt: 'Samochody wyścigowe na torze' },
+                    { icon: '🚀', label: 'Rakiety', prompt: 'Rakiety lecące w kosmos, planety i gwiazdy' },
+                    { icon: '🦸‍♀️', label: 'Superbohaterowie', prompt: 'Superbohaterowie w akcji w dynamicznych pozach' },
+                    { icon: '🧚‍♀️', label: 'Wróżki', prompt: 'Bajkowe wróżki z różdżkami' },
+                    { icon: '🐯', label: 'Tygryski', prompt: 'Przyjazne tygryski w dżungli' },
+                    { icon: '🦓', label: 'Zebry', prompt: 'Zebra na sawannie' },
+                    { icon: '🦒', label: 'Żyrafy', prompt: 'Żyrafa pod drzewem akacji' },
+                    { icon: '🐘', label: 'Słonie', prompt: 'Słoń z trąbą unoszącą wodę' },
+                    { icon: '🐵', label: 'Małpki', prompt: 'Wesołe małpki na lianach' },
+                    { icon: '🐸', label: 'Żabki', prompt: 'Żabka na liściu nenufaru' },
+                    { icon: '🐢', label: 'Żółwie', prompt: 'Żółw na plaży' },
+                    { icon: '🐳', label: 'Ocean', prompt: 'Podwodny świat z wielorybem i rybkami' },
+                    { icon: '🦕', label: 'Dinozaury', prompt: 'Przyjazne dinozaury w parku' },
+                    { icon: '🏰', label: 'Zamki', prompt: 'Bajkowy zamek na wzgórzu' },
+                    { icon: '👸', label: 'Księżniczki', prompt: 'Księżniczka w sukni balowej' },
+                    { icon: '🤴', label: 'Książęta', prompt: 'Książę z mieczem, uśmiechnięty' },
+                    { icon: '🪖', label: 'Żołnierzyki', prompt: 'Zabawkowe żołnierzyki na paradzie z flagami' },
+                    { icon: '🐉', label: 'Smoki', prompt: 'Przyjazny smok nad wioską' },
+                    { icon: '🧜‍♀️', label: 'Syrenki', prompt: 'Syrenka w morzu, muszelki i rybki' },
+                    { icon: '🦋', label: 'Motyle', prompt: 'Motyle nad łąką' },
+                    { icon: '🌸', label: 'Kwiaty', prompt: 'Różne kwiaty w ogrodzie' },
+                    { icon: '🌵', label: 'Pustynia', prompt: 'Kaktusy i zachód słońca' },
+                    { icon: '🌲', label: 'Las', prompt: 'Leśne zwierzątka i drzewa' },
+                    { icon: '🏖️', label: 'Plaża', prompt: 'Plaża z zamkiem z piasku, wiaderkiem i łopatką' },
+                    { icon: '🏜️', label: 'Kaniony', prompt: 'Skaliste kaniony i słońce' },
+                    { icon: '🏞️', label: 'Góry', prompt: 'Góry, rzeka i sosny' },
+                    { icon: '🚌', label: 'Autobus', prompt: 'Wesoły szkolny autobus' },
+                    { icon: '🚒', label: 'Straż', prompt: 'Wóz strażacki w akcji (bez ognia)' },
+                    { icon: '🚑', label: 'Karetka', prompt: 'Karetka z uśmiechniętym kierowcą' },
+                    { icon: '✈️', label: 'Samoloty', prompt: 'Samolot nad chmurami' },
+                    { icon: '🚂', label: 'Pociągi', prompt: 'Lokomotywa na torach' },
+                    { icon: '🚲', label: 'Rowerki', prompt: 'Dziecięcy rowerek w parku' },
+                    { icon: '🛵', label: 'Skutery', prompt: 'Skuter w mieście' },
+                    { icon: '🧩', label: 'Kształty', prompt: 'Duże proste kształty geometryczne' },
+                    { icon: '🎈', label: 'Balony', prompt: 'Mnóstwo balonów nad miasteczkiem' },
+                    { icon: '🎠', label: 'Karuzela', prompt: 'Karuzela z konikami' },
+                    { icon: '🎪', label: 'Cyrk', prompt: 'Cyrkowy namiot i przyjazny klaun' },
+                    { icon: '🎃', label: 'Dynia', prompt: 'Uśmiechnięte dynie i jesienne liście' },
+                    { icon: '❄️', label: 'Zima', prompt: 'Bałwan i śnieżynki' },
+                    { icon: '🌞', label: 'Lato', prompt: 'Słońce, plaża i lody' },
+                    { icon: '🌧️', label: 'Deszcz', prompt: 'Parasolka i kałuże' },
+                    { icon: '🪐', label: 'Planety', prompt: 'Układ słoneczny: planety i gwiazdy' },
+                    { icon: '🧁', label: 'Słodkości', prompt: 'Babeczki i cukierki' },
+                    { icon: '🍕', label: 'Pizza', prompt: 'Wesoła pizza z uśmiechem' },
+                    { icon: '🍦', label: 'Lody', prompt: 'Pucharek lodów z posypką' },
+                    { icon: '🏀', label: 'Sport', prompt: 'Piłki sportowe: koszykówka i piłka nożna' },
+                    { icon: '🎸', label: 'Muzyka', prompt: 'Instrumenty muzyczne' },
+                    { icon: '🧱', label: 'Klocki', prompt: 'Wieża z klocków' },
+                    // zawsze dostępne „Losowa”
+                    { icon: '🎲', label: 'Losowa kolorowanka — zaskocz mnie', random: true },
+                  ] as const;
+                  // losowy wybór 9 z katalogu (bez pozycji losowej) + zawsze „Losowa”
+                  const pool = catalog.filter((it: any) => !it.random);
+                  const randomItem = catalog.find((it: any) => it.random)!;
+                  const shuffled = [...pool].sort(() => Math.random() - 0.5);
+                  const items = [...shuffled.slice(0, 9), randomItem];
+                  const radius = isMobile ? 150 : 200;
+                  return (
+                    <>
+                      {/* Spinning ring wrapper (very slow); pauses on hover */}
+                      <Box sx={{ position: 'absolute', inset: 0, transformOrigin: '50% 50%', animation: 'slowSpin 80s linear infinite', '&:hover': { animationPlayState: 'paused' }, '&:hover *': { animationPlayState: 'paused' } }}>
+                      {items.map((it, idx) => {
+                        const angle = (idx / items.length) * Math.PI * 2 - Math.PI / 2; // start at top
+                        const x = Math.cos(angle) * radius;
+                        const y = Math.sin(angle) * radius;
+                        return (
+                          <Tooltip title={it.label} arrow>
+                          <Box
+                            key={it.label}
+                            onClick={() => {
+                              const prompt = (it as any).random
+                                ? 'Wymyśl dla dziecka kreatywną scenę — losowy temat'
+                                : (it as any).prompt;
+                              generateFromIdea(prompt);
+                            }}
+                            role="button"
+                            aria-label={`Pomysł: ${it.label}`}
+                            sx={{
+                              position: 'absolute',
+                              left: `calc(50% + ${x}px)`,
+                              top: `calc(50% + ${y}px)`,
+                              transform: 'translate(-50%, -50%)',
+                              width: { xs: 72, sm: 88 },
+                              height: { xs: 72, sm: 88 },
+                              borderRadius: '50%',
+                              bgcolor: '#FFB703',
+                              color: 'primary.contrastText',
+                              opacity: 0.7,
+                              boxShadow: 2,
+                              display: 'grid',
+                              placeItems: 'center',
+                              cursor: 'pointer',
+                              userSelect: 'none',
+                              transition: 'transform .12s ease, box-shadow .2s ease, opacity .12s ease',
+                              '&:hover': { transform: 'translate(-50%, -50%) scale(1.06)', boxShadow: 4, opacity: 1 },
+                              '&:active': { transform: 'translate(-50%, -50%) scale(0.96)' },
+                            }}
+                           >
+                             <Box sx={{ fontSize: isMobile ? 30 : 34, lineHeight: 1, animation: 'slowSpinReverse 80s linear infinite' }} component="span">{it.icon}</Box>
+                           </Box>
+                           </Tooltip>
+                         );
+                       })}
+                      </Box>
+                      <style>{`@keyframes slowSpin { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }
+                        @keyframes slowSpinReverse { from { transform: rotate(0deg) } to { transform: rotate(-360deg) } }
+                        @media (prefers-reduced-motion: reduce) { * { animation: none !important; } }`}</style>
+                    </>
+                  );
+                })()}
+              </Box>
 
               {/* Visual hint only (no text) below the record button */}
               {status !== 'recording' && (
@@ -815,7 +1065,7 @@ export const App: React.FC = () => {
                 </Stack>
               )}
 
-              {/* Removed quick prompt suggestions (kids may not read) */}
+              {/* Removed text chips; icons encircle mic button */}
             </Stack>
           )}
         </Box>
@@ -1068,6 +1318,8 @@ export const App: React.FC = () => {
           <Button onClick={() => setPromptInfoItem(null)} startIcon={<CloseIcon />}>Zamknij</Button>
         </DialogActions>
       </Dialog>
+      {/* Kid-friendly assistant */}
+      <Mascot status={status} enabled={tipsEnabled} onToggle={setTipsEnabled} />
     </Box>
   );
 };
