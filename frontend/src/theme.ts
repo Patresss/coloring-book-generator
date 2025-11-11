@@ -35,6 +35,9 @@ export const theme = createTheme({
       styleOverrides: {
         body: {
           backgroundColor: '#FFFDF6',
+          // Softer, less saturated ambient wash
+          backgroundImage: 'radial-gradient(60% 100% at 100% 0%, rgba(255, 183, 3, 0.06) 0%, rgba(255, 183, 3, 0) 60%), radial-gradient(50% 60% at 0% 100%, rgba(96, 165, 250, 0.05) 0%, rgba(96, 165, 250, 0) 60%)',
+          minHeight: '100dvh',
         },
       },
     },
@@ -44,6 +47,7 @@ export const theme = createTheme({
           backgroundImage: `linear-gradient(90deg, ${AMBER} 0%, ${ORANGE} 100%)`,
           backgroundColor: 'transparent',
           color: '#fff',
+          boxShadow: '0 6px 24px rgba(251, 133, 0, 0.25)',
         },
       },
     },
@@ -60,7 +64,8 @@ export const theme = createTheme({
     },
     MuiButton: {
       styleOverrides: {
-        root: { borderRadius: 14 },
+        root: { borderRadius: 14, transition: 'transform .08s ease, box-shadow .2s ease' },
+        containedPrimary: { boxShadow: '0 6px 16px rgba(251, 133, 0, 0.3)' },
         containedSuccess: { boxShadow: '0 6px 16px rgba(52, 211, 153, 0.35)' },
         containedInfo: { boxShadow: '0 6px 16px rgba(96, 165, 250, 0.35)' },
         containedError: { boxShadow: '0 6px 16px rgba(239, 71, 111, 0.35)' },
@@ -69,6 +74,14 @@ export const theme = createTheme({
     MuiPaper: {
       styleOverrides: {
         rounded: { borderRadius: 16 },
+      },
+    },
+    MuiIconButton: {
+      styleOverrides: {
+        root: {
+          transition: 'transform .08s ease',
+          '&:active': { transform: 'scale(0.96)' },
+        },
       },
     },
   },

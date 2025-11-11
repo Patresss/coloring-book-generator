@@ -39,6 +39,10 @@ import { auth, onAuthRequired } from './api/auth';
   import HistoryIcon from '@mui/icons-material/History';
   import { useTheme } from '@mui/material/styles';
   import useMediaQuery from '@mui/material/useMediaQuery';
+  import BrushIcon from '@mui/icons-material/Brush';
+  import CelebrationIcon from '@mui/icons-material/Celebration';
+  import { AnimatedBackground } from './components/AnimatedBackground';
+  import { Confetti } from './components/Confetti';
 
 type Status = 'idle' | 'recording' | 'transcribing' | 'improving' | 'generating' | 'printing' | 'done' | 'error';
 
@@ -246,6 +250,15 @@ export const App: React.FC = () => {
     100% { transform: scaleY(0.4); }
   `;
 
+  const wiggle = keyframes`
+    0% { transform: rotate(0deg) translateY(0); }
+    30% { transform: rotate(-8deg) translateY(1px); }
+    60% { transform: rotate(6deg) translateY(-1px); }
+    100% { transform: rotate(0deg) translateY(0); }
+  `;
+
+  const [confettiKey, setConfettiKey] = useState<number | null>(null);
+
   const steps = processMode === 'printOnly'
     ? ['Drukowanie']
     : (() => {
@@ -283,6 +296,7 @@ export const App: React.FC = () => {
   // Auto-close modal and open image after all steps finish
   useEffect(() => {
     if (status !== 'done') return;
+    setConfettiKey(Date.now());
     let cancelled = false;
     (async () => {
       try {
@@ -392,7 +406,9 @@ export const App: React.FC = () => {
   }
 
   return (
-    <Box sx={{ display: 'flex', height: '100dvh' }}>
+    <Box sx={{ display: 'flex', height: '100dvh', position: 'relative' }}>
+      <AnimatedBackground />
+      <Confetti triggerKey={confettiKey} />
       <AppBar position="fixed" color="primary" elevation={1}>
         <Toolbar>
           {isMobile && (
@@ -405,9 +421,10 @@ export const App: React.FC = () => {
           <Typography
             variant="h6"
             component="div"
-            sx={{ flexGrow: 1, lineHeight: { xs: 1.15, sm: 1.2 } }}
+            sx={{ flexGrow: 1, lineHeight: { xs: 1.15, sm: 1.2 }, display: 'flex', alignItems: 'center', gap: 1 }}
           >
-            Kolorowanki
+            <Box component="span" sx={{ color: 'common.white', fontWeight: 800, textShadow: '0 1px 2px rgba(0,0,0,0.25)' }}>Kolorowanki</Box>
+            <BrushIcon sx={{ fontSize: 22, animation: `${wiggle} 2.4s ease-in-out infinite`, transformOrigin: 'bottom center' }} />
           </Typography>
           {/* Unified icon-over-switch controls */}
           {(() => {
@@ -464,7 +481,7 @@ export const App: React.FC = () => {
           })()}
         </Toolbar>
       </AppBar>
-      <Box sx={{ display: 'flex', flex: 1, minHeight: 0, pt: { xs: 7, sm: 8 } }}>
+      <Box sx={{ display: 'flex', flex: 1, minHeight: 0, pt: { xs: 7, sm: 8 }, position: 'relative', zIndex: 1 }}>
         {/* Główny interfejs renderowany tylko gdy konfiguracja jest kompletna */}
         {!isMobile && (
         <Box component="aside" sx={{ width: 480, borderRight: 1, borderColor: 'divider', p: 2, overflow: 'auto' }}>
@@ -527,7 +544,7 @@ export const App: React.FC = () => {
                     secondary={
                       <>
                         {item.imageUrl && (
-                          <Box sx={{ mt: 1, borderRadius: 2, border: 1, borderColor: 'divider', overflow: 'hidden' }}>
+                          <Box sx={{ mt: 1, borderRadius: 2, border: 1, borderColor: 'divider', overflow: 'hidden', transition: 'transform .2s ease, box-shadow .2s ease', '&:hover': { transform: 'scale(1.02) rotate(-0.2deg)', boxShadow: '0 10px 24px rgba(0,0,0,0.10)' } }}>
                             <Box component="img" src={item.imageUrl} alt="podgląd" loading="lazy" decoding="async" sx={{ width: '100%', height: 'auto', display: 'block' }} />
                           </Box>
                         )}
@@ -554,7 +571,18 @@ export const App: React.FC = () => {
                     alt={selected.prompt}
                     loading="eager"
                     decoding="async"
-                    sx={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', borderRadius: 2, border: 1, borderColor: 'divider' }}
+                    sx={{
+                      maxWidth: '100%',
+                      maxHeight: '100%',
+                      objectFit: 'contain',
+                      borderRadius: 2,
+                      border: 1,
+                      borderColor: 'divider',
+                      boxShadow: '0 12px 40px rgba(0,0,0,0.10)',
+                      position: 'relative',
+                      outline: '3px dashed rgba(251,133,0,0.25)',
+                      outlineOffset: 6,
+                    }}
                   />
                 </Box>
               )}
@@ -753,6 +781,13 @@ export const App: React.FC = () => {
                 <MicIcon sx={{ fontSize: { xs: 36, sm: 56 } }} />
               </Fab>
 
+              {/* Visual hint only (no text) below the record button */}
+              {status !== 'recording' && (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'text.secondary', height: 18 }}>
+                  <BrushIcon fontSize="small" sx={{ animation: `${wiggle} 2.4s ease-in-out infinite`, transformOrigin: 'bottom center', opacity: 0.85 }} />
+                </Box>
+              )}
+
               {status === 'recording' && (
                 <Box aria-label="Nagrywanie – wizualizacja dźwięku" sx={{ display: 'flex', alignItems: 'flex-end', gap: 0.6, height: 40 }}>
                   {Array.from({ length: 12 }).map((_, i) => (
@@ -779,6 +814,8 @@ export const App: React.FC = () => {
                   <Button variant="contained" color="error" onClick={cancelRecording} startIcon={<CloseIcon />}>Anuluj</Button>
                 </Stack>
               )}
+
+              {/* Removed quick prompt suggestions (kids may not read) */}
             </Stack>
           )}
         </Box>
@@ -828,7 +865,7 @@ export const App: React.FC = () => {
 
           {status === 'done' && (
             <>
-              <Alert severity="success" sx={{ mt: 2 }}>Gotowe!</Alert>
+              <Alert severity="success" icon={<CelebrationIcon />} sx={{ mt: 2 }}>Gotowe!</Alert>
               {imageUrl && (
                 <Box sx={{ mt: 2 }}>
                   <Box
@@ -844,6 +881,9 @@ export const App: React.FC = () => {
                       borderRadius: 2,
                       border: 1,
                       borderColor: 'divider',
+                      boxShadow: '0 12px 40px rgba(0,0,0,0.10)',
+                      outline: '3px dashed rgba(251,133,0,0.25)',
+                      outlineOffset: 6,
                     }}
                   />
                 </Box>
@@ -981,7 +1021,7 @@ export const App: React.FC = () => {
                       secondary={
                         <>
                           {item.imageUrl && (
-                            <Box sx={{ mt: 1, borderRadius: 2, border: 1, borderColor: 'divider', overflow: 'hidden' }}>
+                            <Box sx={{ mt: 1, borderRadius: 2, border: 1, borderColor: 'divider', overflow: 'hidden', transition: 'transform .2s ease, box-shadow .2s ease', '&:hover': { transform: 'scale(1.02) rotate(-0.2deg)', boxShadow: '0 10px 24px rgba(0,0,0,0.10)' } }}>
                               <Box component="img" src={item.imageUrl} alt="podgląd" loading="lazy" decoding="async" sx={{ width: '100%', height: 'auto', display: 'block' }} />
                             </Box>
                           )}
