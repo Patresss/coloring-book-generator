@@ -24,6 +24,7 @@ WORKDIR /app
 COPY --from=base /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
 COPY backend/package.json ./package.json
+COPY backend/scripts ./scripts
 
 # Add curl for healthcheck
 RUN apk add --no-cache curl libc6-compat

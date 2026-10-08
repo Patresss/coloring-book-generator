@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { zodTextFormat } from 'openai/helpers/zod';
 import { config } from '../config.js';
 import { logger } from '../utils/logger.js';
-import * as constants from '../constants.js';
+import { apiErrorDetails, openAIErrorMessage } from '../utils/apierror.js';
 import { createOpenAIClient } from './openai.js';
 
 const referenceSchema = z.object({
@@ -77,9 +77,8 @@ export const detectReferences = async (userPrompt: string): Promise<ReferenceDet
     const refs = parsed.references.filter((name) => available.includes(name));
     logger.info('References: detect result', { references: refs });
     return { references: refs, available };
-  } catch (e: any) {
-    const msg = String(e?.message || e);
-    logger.error('References: detection API error', { error: msg });
-    throw new Error('Błąd wyszukiwania referencji');
+  } catch (e: unknown) {
+    logger.error('References: detection API error', apiErrorDetails(e));
+    throw new Error(openAIErrorMessage(e, 'Błąd wyszukiwania referencji'));
   }
 };

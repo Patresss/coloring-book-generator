@@ -2,6 +2,9 @@ services:
   backend:
     image: ghcr.io/patresss/coloring-backend:latest
     container_name: coloring-backend
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     environment:
       # ========================================
       # WYMAGANE - Klucze API

@@ -71,6 +71,9 @@ services:
   backend:
     image: ghcr.io/patresss/coloring-backend:latest
     container_name: coloring-backend
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     environment:
       - OPENAI_API_KEY=sk-twoj-klucz-openai
       - GEMINI_API_KEY=twoj-klucz-gemini
@@ -108,6 +111,9 @@ services:
   backend:
     image: ghcr.io/patresss/coloring-backend:latest
     container_name: coloring-backend
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     environment:
       # WYMAGANE
       - OPENAI_API_KEY=sk-twoj-klucz-openai
@@ -199,6 +205,58 @@ services:
    ```
 
 ## Konfiguracja
+
+### Diagnostyka połączeń AI na Synology
+
+`Connection error.` w ulepszaniu promptu i wykrywaniu referencji oznacza, że klient
+OpenAI nie nawiązał połączenia. Błąd wykrywania referencji zatrzymuje generowanie
+przed wywołaniem Gemini. Odpowiedź `/health` potwierdza działanie serwera HTTP,
+ale nie testuje połączenia z usługami AI.
+
+Uruchom test **wewnątrz kontenera**. W aktualnym obrazie:
+
+```bash
+sudo docker exec coloring-backend npm run diagnose:network
+```
+
+W starszym obrazie, z katalogu zawierającego aktualny kod repozytorium na NAS:
+
+```bash
+sudo docker exec -i coloring-backend node --input-type=module < backend/scripts/diagnose-network.mjs
+```
+
+Test nie używa prawdziwych kluczy ani nie generuje płatnych obrazów. Sprawdza
+połączenia domyślne, IPv4, IPv6, TLS oraz transport zainstalowanego SDK OpenAI.
+HTTP 401 z OpenAI jest oczekiwane i potwierdza udane połączenie HTTPS.
+
+- `ENOTFOUND` / `EAI_AGAIN`: sprawdź DNS kontenera i serwera NAS. Jeśli bezpośrednie zapytania do zewnętrznych resolverów działają, ustaw DNS backendu w Compose:
+
+  ```yaml
+  services:
+    backend:
+      dns:
+        - 8.8.8.8
+        - 1.1.1.1
+  ```
+
+  Po sprawdzeniu konfiguracji odtwórz tylko backend z obecnego obrazu:
+
+  ```bash
+  sudo docker compose config --quiet
+  sudo docker compose up -d --no-deps --force-recreate --no-build --pull never backend
+  ```
+
+  Sama zmiana pliku Compose bez odtworzenia kontenera nie zmieni jego DNS.
+- `ETIMEDOUT` / `ENETUNREACH` / `ECONNREFUSED`: sprawdź trasę, firewall i dostęp kontenera do internetu.
+- `CERT_HAS_EXPIRED` / `UNABLE_TO_VERIFY_LEAF_SIGNATURE` / `UNABLE_TO_GET_ISSUER_CERT_LOCALLY`: sprawdź czas NAS, certyfikaty CA i ewentualny proxy HTTPS.
+- Jeśli domyślny transport SDK zawodzi, a jego wariant IPv4 działa: sprawdź konfigurację IPv6 sieci kontenera.
+
+Samo niepowodzenie IPv6 jest dopuszczalne, gdy połączenie domyślne działa.
+Nie wyłączaj weryfikacji certyfikatów TLS. Zwiększenie `OPENAI_TIMEOUT_MS` nie
+rozwiązuje błędów DNS ani certyfikatów.
+
+Zmiany w lokalnym kodzie wymagają przebudowania obrazu. `docker compose pull`
+pobiera jedynie ostatnio opublikowany obraz; nie wdraża lokalnych poprawek.
 
 ### Zmienne środowiskowe
 

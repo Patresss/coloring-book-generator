@@ -3,6 +3,7 @@ import fsSync from 'fs';
 import OpenAI from 'openai';
 import { config } from '../config.js';
 import { logger } from '../utils/logger.js';
+import { apiErrorDetails, openAIErrorMessage } from '../utils/apierror.js';
 
 export const createOpenAIClient = () => new OpenAI({
   apiKey: config.openaiApiKey,
@@ -51,9 +52,9 @@ export const improvePrompt = async (original: string): Promise<string> => {
       ],
     } as any);
     improved = (cc as any)?.choices?.[0]?.message?.content?.trim?.();
-  } catch (e: any) {
-      const msg = String(e?.message || e);
-      logger.error('Error while generating improved prompt', { msg });
+  } catch (e: unknown) {
+    logger.error('OpenAI: prompt improvement failed', apiErrorDetails(e));
+    throw new Error(openAIErrorMessage(e, 'Nie udało się ulepszyć promptu'));
   }
   logger.info('Improved prompt', { improved });
 
