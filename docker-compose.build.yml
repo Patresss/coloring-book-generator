@@ -4,6 +4,9 @@ services:
       context: .
       dockerfile: backend/Dockerfile
     container_name: coloring-backend
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     environment:
       # WYMAGANE - Uzupełnij swoimi kluczami API
       - OPENAI_API_KEY=
