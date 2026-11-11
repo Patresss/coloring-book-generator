@@ -98,6 +98,10 @@ export const listHistory = async () => {
     const model = typeof meta.model === 'string' ? meta.model : undefined;
     const hasJpg = fsSync.existsSync(imageJpg);
     const hasPng = fsSync.existsSync(imagePng);
+    let imageVersion = 0;
+    if (hasJpg || hasPng) {
+      try { imageVersion = Math.round((await fs.stat(hasJpg ? imageJpg : imagePng)).mtimeMs); } catch {}
+    }
     return {
       id,
       createdAt: meta.createdAt || 0,
@@ -106,7 +110,12 @@ export const listHistory = async () => {
       references,
       generationTimeMs,
       model,
+      mode: meta.mode === 'image' ? 'image' : meta.mode === 'coloring' ? 'coloring' : undefined,
+      editInstruction: typeof meta.editInstruction === 'string' ? meta.editInstruction : undefined,
+      editedFrom: typeof meta.editedFrom === 'string' ? meta.editedFrom : undefined,
       imageUrl: hasJpg ? `/files/${id}/${FILE_IMAGE_JPG}` : (hasPng ? `/files/${id}/${FILE_IMAGE_PNG}` : undefined),
+      // Generated on first request by the /files/:id/thumb.jpg route; ?v busts the cache when the image changes
+      thumbUrl: hasJpg || hasPng ? `/files/${id}/thumb.jpg?v=${imageVersion}` : undefined,
     };
   }));
   // newest first

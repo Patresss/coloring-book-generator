@@ -55,7 +55,11 @@ export const App: React.FC = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [status, setStatus] = useState<Status>('idle');
-  const [processMode, setProcessMode] = useState<'full' | 'printOnly' | null>(null);
+  const [processMode, setProcessMode] = useState<'full' | 'printOnly' | 'edit' | null>(null);
+  // What the microphone is recording for: a new idea or a correction of the open picture
+  const [recordPurpose, setRecordPurpose] = useState<'new' | 'edit'>('new');
+  const recordPurposeRef = useRef<'new' | 'edit'>('new');
+  const lastEditRef = useRef<{ source: HistoryItem; instruction: string; id?: string } | null>(null);
   const [prompt, setPrompt] = useState('');
   const [id, setId] = useState<string | null>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
@@ -195,10 +199,12 @@ export const App: React.FC = () => {
   const sfxSuccess = () => { if (sfxEnabled) { playTone(660, 0.09); setTimeout(() => playTone(880, 0.12), 90); } };
   const sfxError = () => { if (sfxEnabled) { playTone(260, 0.1); setTimeout(() => playTone(200, 0.16), 110); } };
 
-  const startRecording = async () => {
+  const startRecording = async (purpose: 'new' | 'edit' = 'new') => {
     try {
       sfxClick();
-      setIdeasVisible(false);
+      recordPurposeRef.current = purpose;
+      setRecordPurpose(purpose);
+      if (purpose === 'new') setIdeasVisible(false);
       setIncludeTranscribeStep(true);
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const mr = new MediaRecorder(stream, { mimeType: 'audio/webm' });
@@ -208,6 +214,10 @@ export const App: React.FC = () => {
       mr.onstop = async () => {
         if (cancelledRef.current) return;
         const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
+        if (recordPurposeRef.current === 'edit') {
+          await runEdit({ audio: blob });
+          return;
+        }
         setProcessMode('full');
         setPrompt('');
         setImprovedPrompt(null);
@@ -305,12 +315,13 @@ export const App: React.FC = () => {
       if (status === 'recording') {
         stopRecording();
       } else if (canRecord) {
-        startRecording();
+        // With a picture open, Space records a correction of that picture
+        startRecording(selected ? 'edit' : 'new');
       }
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [status, canRecord]);
+  }, [status, canRecord, selected]);
 
   useEffect(() => { try { localStorage.setItem('sfxEnabled', String(sfxEnabled)); } catch {} }, [sfxEnabled]);
 
@@ -428,16 +439,63 @@ export const App: React.FC = () => {
     }
   };
 
+  // Correct the picture that is open in the preview ("dodaj kota"), by voice or typed text.
+  const runEdit = async ({ audio, text, targetId: retryId }: { audio?: Blob; text?: string; targetId?: string }) => {
+    const source = selected ?? lastEditRef.current?.source;
+    if (!source) return;
+    setProcessMode('edit');
+    setIncludeTranscribeStep(!!audio);
+    setErrorText(null);
+    setImprovedPrompt(null);
+    setFoundReferences(null);
+    setPrompt(text || '');
+    try {
+      let instruction = (text || '').trim();
+      let targetId: string | undefined = retryId;
+      if (audio) {
+        setStatus('transcribing');
+        const transcribed = await api.transcribe(audio);
+        instruction = transcribed.prompt.trim();
+        targetId = transcribed.id;
+        setPrompt(instruction);
+      }
+      if (!instruction) throw new Error('Nie usłyszałem, co zmienić. Spróbuj jeszcze raz.');
+      lastEditRef.current = { source, instruction, id: targetId };
+      setStatus('generating');
+      const result = await api.edit(source.id, instruction, targetId);
+      setId(result.id);
+      setImageUrl(result.imageUrl);
+      setFoundReferences(result.references);
+      const items = await api.history();
+      setHistory(items);
+      const updated = items.find((h) => h.id === result.id);
+      if (updated) setSelected(updated);
+      setPreviewBustToken(Date.now());
+      lastEditRef.current = null;
+      setStatus('done');
+    } catch (e: any) {
+      console.error('Edit failed', e);
+      setErrorText(extractErrorMessage(e, 'Nie udało się poprawić rysunku.'));
+      setStatus('error');
+      sfxError();
+    }
+  };
+
   const handleRegenerateSelected = async (item: HistoryItem) => {
     try {
       setIncludeTranscribeStep(false);
       setProcessMode('full');
+      setErrorText(null);
       setStatus('generating');
       setPrompt(item.prompt);
+      setImprovedPrompt(item.improvedPrompt || null);
+      setFoundReferences(Array.isArray(item.references) ? item.references : null);
       const newId = String(Date.now());
-      const gen = await api.generate(newId, item.prompt, {
+      const description = item.improvedPrompt || item.prompt;
+      const gen = await api.generate(newId, description, {
         landscape: landscapeMode,
         references: Array.isArray(item.references) && item.references.length > 0 ? item.references : undefined,
+        originalPrompt: item.improvedPrompt ? item.prompt : undefined,
       });
       setImageUrl(gen.imageUrl);
       await refreshHistory();
@@ -447,6 +505,7 @@ export const App: React.FC = () => {
       setStatus('done');
     } catch (e) {
       console.error('Regenerate failed:', e);
+      setErrorText(extractErrorMessage(e, 'Nie udało się narysować jeszcze raz.'));
       setStatus('error');
     }
   };
@@ -466,6 +525,10 @@ export const App: React.FC = () => {
   };
 
   const handleRetry = async () => {
+    if (processMode === 'edit' && lastEditRef.current) {
+      await runEdit({ text: lastEditRef.current.instruction, targetId: lastEditRef.current.id });
+      return;
+    }
     if (!prompt || !id) return;
     try {
       setErrorText(null);
@@ -595,7 +658,7 @@ export const App: React.FC = () => {
             px: { xs: 1, sm: 2 },
           }}
         >
-          {selected && status !== 'recording' ? (
+          {selected && !(status === 'recording' && recordPurpose === 'new') ? (
             <SelectedPreview
               item={selected}
               isMobile={isMobile}
@@ -605,6 +668,13 @@ export const App: React.FC = () => {
               onRegenerate={() => handleRegenerateSelected(selected)}
               onPrint={() => handlePrintHistoryItem(selected)}
               onDelete={() => setPendingDelete(selected)}
+              onShowDetails={() => setPromptInfoItem(selected)}
+              canEdit={canRecord}
+              editRecording={status === 'recording' && recordPurpose === 'edit'}
+              onEditVoice={() => startRecording('edit')}
+              onEditText={(text) => runEdit({ text })}
+              onStopEdit={stopRecording}
+              onCancelEdit={cancelRecording}
             />
           ) : (
             <RecordingControls
@@ -618,7 +688,7 @@ export const App: React.FC = () => {
               onAutoPrintChange={setAutoPrint}
               onImproveChange={setImproveEnabled}
               onLandscapeChange={setLandscapeMode}
-              onStartRecording={startRecording}
+              onStartRecording={() => startRecording('new')}
               onStopRecording={stopRecording}
               onCancelRecording={cancelRecording}
               onIdeaSelect={generateFromIdea}
@@ -665,7 +735,18 @@ export const App: React.FC = () => {
         onCancel={() => setPendingDelete(null)}
         onConfirm={(item) => { setPendingDelete(null); handleDeleteHistoryItem(item); }}
       />
-      <PromptDetailsDialog item={promptInfoItem} open={!!promptInfoItem} onClose={() => setPromptInfoItem(null)} />
+      <PromptDetailsDialog
+        item={promptInfoItem}
+        open={!!promptInfoItem}
+        canRedraw={canRecord}
+        onClose={() => setPromptInfoItem(null)}
+        onRedraw={(item) => {
+          setPromptInfoItem(null);
+          setHistoryOpen(false);
+          setSelected(item);
+          handleRegenerateSelected(item);
+        }}
+      />
     </Box>
   );
 };

@@ -1,5 +1,18 @@
 import { signalAuthRequired } from './auth';
-export type HistoryItem = { id: string; createdAt: number; prompt: string; improvedPrompt?: string; references?: string[]; generationTimeMs?: number; model?: string; imageUrl?: string };
+export type HistoryItem = {
+  id: string;
+  createdAt: number;
+  prompt: string;
+  improvedPrompt?: string;
+  references?: string[];
+  generationTimeMs?: number;
+  model?: string;
+  mode?: 'coloring' | 'image';
+  editInstruction?: string; // set when the page is a voice/text correction of another one
+  editedFrom?: string;
+  imageUrl?: string;
+  thumbUrl?: string;
+};
 
 const parseTimeout = (v: unknown, fallback: number) => {
   const n = Number(v);
@@ -121,12 +134,17 @@ export const api = {
       return res.json();
     }, OPENAI_TIMEOUT);
   },
-  async generate(id: string, prompt: string, options?: { landscape?: boolean; imageModel?: string; references?: string[] }): Promise<{ imageUrl: string; thumbUrl: string }>{
+  async generate(id: string, prompt: string, options?: { landscape?: boolean; imageModel?: string; references?: string[]; originalPrompt?: string }): Promise<{ imageUrl: string; thumbUrl: string }>{
     const body: any = { id, prompt };
+    if (options?.originalPrompt) body.originalPrompt = options.originalPrompt;
     if (options?.landscape) body.landscape = true;
     if (options?.imageModel) body.imageModel = options.imageModel;
     if (Array.isArray(options?.references) && options?.references.length > 0) body.references = options.references;
     return postJson('/api/generate', body, OPENAI_TIMEOUT);
+  },
+  // Corrects an existing picture; `id` may be the session created by transcribe()
+  async edit(sourceId: string, instruction: string, id?: string): Promise<{ id: string; imageUrl: string; references: string[] }>{
+    return postJson('/api/edit', { sourceId, instruction, ...(id ? { id } : {}) }, OPENAI_TIMEOUT);
   },
   async improve(id: string, prompt: string): Promise<{ id: string; improved: string }>{
     return postJson('/api/improve', { id, prompt }, OPENAI_TIMEOUT);

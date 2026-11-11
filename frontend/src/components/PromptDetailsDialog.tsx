@@ -9,77 +9,115 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close';
+import AutorenewRoundedIcon from '@mui/icons-material/AutorenewRounded';
+import AutoFixHighRoundedIcon from '@mui/icons-material/AutoFixHighRounded';
 import { HistoryItem } from '../api/client';
 import { PeopleChips } from './PeopleChips';
+import { formatWhen } from './HistoryList';
+import { sky } from '../theme';
 
 type PromptDetailsDialogProps = {
   item: HistoryItem | null;
   open: boolean;
+  canRedraw: boolean;
   onClose: () => void;
+  onRedraw: (item: HistoryItem) => void;
 };
 
-export const PromptDetailsDialog: React.FC<PromptDetailsDialogProps> = ({ item, open, onClose }) => (
-  <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-    <DialogTitle>Prompt</DialogTitle>
-    <DialogContent dividers>
-      {item && (
-        <Stack spacing={2}>
-          {item.prompt && (
-            <Box>
-              <Typography variant="subtitle2" gutterBottom>
-                Podstawowy prompt
-              </Typography>
-              <Box sx={{ p: 1, bgcolor: 'action.hover', borderRadius: 1, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-                {item.prompt}
-              </Box>
-            </Box>
-          )}
-          {item.improvedPrompt && (
-            <Box>
-              <Typography variant="subtitle2" gutterBottom>
-                Ulepszony prompt
-              </Typography>
-              <Box sx={{ p: 1, bgcolor: 'action.hover', borderRadius: 1, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-                {item.improvedPrompt}
-              </Box>
-            </Box>
-          )}
-          {item.references && item.references.length > 0 && (
-            <Box>
-              <Typography variant="subtitle2" gutterBottom>
-                Osoby na rysunku
-              </Typography>
-              <PeopleChips references={item.references} size="small" justify="flex-start" />
-            </Box>
-          )}
-          {item.generationTimeMs !== undefined && (
-            <Box>
-              <Typography variant="subtitle2" gutterBottom>
-                Czas generowania
-              </Typography>
-              <Box sx={{ p: 1, bgcolor: 'action.hover', borderRadius: 1, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-                {(item.generationTimeMs / 1000).toFixed(2)} sekund
-              </Box>
-            </Box>
-          )}
-          {item.model && (
-            <Box>
-              <Typography variant="subtitle2" gutterBottom>
-                Model
-              </Typography>
-              <Box sx={{ p: 1, bgcolor: 'action.hover', borderRadius: 1, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-                {item.model}
-              </Box>
-            </Box>
-          )}
-        </Stack>
-      )}
-    </DialogContent>
-    <DialogActions>
-      <Button onClick={onClose} startIcon={<CloseIcon />}>
-        Zamknij
-      </Button>
-    </DialogActions>
-  </Dialog>
+const textBox = {
+  p: 1.25,
+  bgcolor: sky.blueTint,
+  borderRadius: '12px',
+  whiteSpace: 'pre-wrap',
+  wordBreak: 'break-word',
+} as const;
+
+const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
+  <Box>
+    <Typography variant="subtitle2" gutterBottom>{title}</Typography>
+    {children}
+  </Box>
 );
+
+export const PromptDetailsDialog: React.FC<PromptDetailsDialogProps> = ({ item, open, canRedraw, onClose, onRedraw }) => {
+  // Keep the last item while the dialog fades out
+  const lastRef = React.useRef<HistoryItem | null>(null);
+  if (item) lastRef.current = item;
+  const shown = item ?? lastRef.current;
+
+  const facts = shown
+    ? [
+        shown.createdAt ? formatWhen(shown.createdAt) : null,
+        shown.mode === 'image' ? 'obraz' : shown.mode === 'coloring' ? 'kolorowanka' : null,
+        shown.generationTimeMs !== undefined ? `${(shown.generationTimeMs / 1000).toFixed(1)} s` : null,
+        shown.model || null,
+      ].filter(Boolean)
+    : [];
+
+  return (
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth aria-labelledby="details-title">
+      <DialogTitle id="details-title">Szczegóły</DialogTitle>
+      <DialogContent dividers sx={{ borderColor: sky.line }}>
+        {shown && (
+          <Stack spacing={2}>
+            <Stack direction="row" spacing={2} alignItems="flex-start">
+              {(shown.thumbUrl || shown.imageUrl) && (
+                <Box
+                  component="img"
+                  src={shown.thumbUrl || shown.imageUrl}
+                  alt=""
+                  sx={{ width: 96, flex: 'none', borderRadius: '12px', border: `1px solid ${sky.line}`, bgcolor: '#fff' }}
+                />
+              )}
+              <Box sx={{ minWidth: 0, flex: 1 }}>
+                <Section title="Pomysł">
+                  <Box sx={textBox}>{shown.prompt || '—'}</Box>
+                </Section>
+              </Box>
+            </Stack>
+            {shown.editInstruction && (
+              <Section title="Poprawka">
+                <Stack direction="row" spacing={1} alignItems="center" sx={{ ...textBox, bgcolor: '#F1ECFF' }}>
+                  <AutoFixHighRoundedIcon sx={{ color: '#7C3AED', fontSize: 20, flex: 'none' }} />
+                  <span>{shown.editInstruction}</span>
+                </Stack>
+                <Typography variant="caption" color="text.secondary">To poprawiona wersja wcześniejszego rysunku.</Typography>
+              </Section>
+            )}
+            {shown.improvedPrompt && (
+              <Section title="Opis dla AI">
+                <Box sx={{ ...textBox, fontSize: 14 }}>{shown.improvedPrompt}</Box>
+              </Section>
+            )}
+            {shown.references && shown.references.length > 0 && (
+              <Section title="Osoby na rysunku">
+                <PeopleChips references={shown.references} size="small" justify="flex-start" />
+              </Section>
+            )}
+            {facts.length > 0 && (
+              <Typography variant="caption" sx={{ color: sky.muted }}>
+                {facts.join(' · ')}
+              </Typography>
+            )}
+          </Stack>
+        )}
+      </DialogContent>
+      <DialogActions sx={{ px: 3, py: 1.5, gap: 1, flexWrap: 'wrap' }}>
+        <Button onClick={onClose} sx={{ borderRadius: 999 }}>
+          Zamknij
+        </Button>
+        {shown && (shown.prompt || shown.improvedPrompt) && (
+          <Button
+            variant="contained"
+            startIcon={<AutorenewRoundedIcon />}
+            disabled={!canRedraw}
+            onClick={() => onRedraw(shown)}
+            sx={{ borderRadius: 999, px: 2.5 }}
+          >
+            Narysuj jeszcze raz z tym opisem
+          </Button>
+        )}
+      </DialogActions>
+    </Dialog>
+  );
+};

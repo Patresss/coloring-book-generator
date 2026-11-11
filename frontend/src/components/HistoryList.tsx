@@ -15,6 +15,8 @@ type HistoryListProps = {
   columns?: 1 | 'auto';
 };
 
+const PAGE_SIZE = 24;
+
 const startOfDay = (date: Date) => new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
 
 // "Dziś, 11:55" / "Wczoraj, 18:02" / "9 lis, 16:15"
@@ -45,6 +47,22 @@ export const HistoryList: React.FC<HistoryListProps> = ({
   columns = 'auto',
 }) => {
   const single = columns === 1;
+  // Render in chunks: hundreds of pages would otherwise all mount (and start loading) at once
+  const [visible, setVisible] = React.useState(PAGE_SIZE);
+  const sentinelRef = React.useRef<HTMLLIElement | null>(null);
+  const hasMore = visible < items.length;
+
+  React.useEffect(() => {
+    if (!hasMore || !sentinelRef.current || typeof IntersectionObserver === 'undefined') return undefined;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) setVisible((count) => count + PAGE_SIZE);
+      },
+      { rootMargin: '800px 0px' },
+    );
+    observer.observe(sentinelRef.current);
+    return () => observer.disconnect();
+  }, [hasMore, visible]);
   if (items.length === 0) {
     return (
       <Typography sx={{ color: sky.muted, fontWeight: 700, textAlign: 'center', py: 5, px: 2 }}>
@@ -64,7 +82,7 @@ export const HistoryList: React.FC<HistoryListProps> = ({
         gap: single ? 1.5 : 1.25,
       }}
     >
-      {items.map((item) => {
+      {items.slice(0, visible).map((item) => {
         const selected = selectedId === item.id;
         return (
           <Box
@@ -98,7 +116,7 @@ export const HistoryList: React.FC<HistoryListProps> = ({
               {item.imageUrl && (
                 <Box
                   component="img"
-                  src={item.imageUrl}
+                  src={item.thumbUrl || item.imageUrl}
                   alt=""
                   loading="lazy"
                   decoding="async"
@@ -141,6 +159,9 @@ export const HistoryList: React.FC<HistoryListProps> = ({
           </Box>
         );
       })}
+      {hasMore && (
+        <Box component="li" ref={sentinelRef} aria-hidden sx={{ gridColumn: '1 / -1', height: 1 }} />
+      )}
     </Box>
   );
 };

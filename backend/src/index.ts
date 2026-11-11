@@ -15,7 +15,10 @@ import { authRouter } from './routes/auth.js';
 import { referencesRouter } from './routes/references.js';
 import { modelsRouter } from './routes/models.js';
 import { settingsRouter } from './routes/settings.js';
+import { editRouter } from './routes/edit.js';
 import { makeRateLimit } from './utils/rateLimit.js';
+import { ensureThumb } from './services/thumbs.js';
+import { isValidId } from './utils/validation.js';
 
 const app = express();
 
@@ -43,6 +46,7 @@ app.use(authRequired);
 
 app.use('/api/transcribe', makeRateLimit(10, 60_000), transcribeRouter);
 app.use('/api/generate', makeRateLimit(15, 60_000), generateRouter);
+app.use('/api/edit', makeRateLimit(15, 60_000), editRouter);
 app.use('/api/improve', makeRateLimit(20, 60_000), improveRouter);
 app.use('/api/references', referencesRouter); // rate limits are set per route inside
 app.use('/api/print', printRouter);
@@ -51,6 +55,18 @@ app.use('/api/config', configRouter);
 app.use('/api/models', makeRateLimit(30, 60_000), modelsRouter);
 app.use('/api/settings', makeRateLimit(30, 60_000), settingsRouter);
 
+// History thumbnails are created lazily, before the static handler serves them
+app.get('/files/:id/thumb.jpg', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    if (!isValidId(req.params.id)) return res.status(400).end();
+    const thumb = await ensureThumb(req.params.id);
+    if (!thumb) return res.status(404).end();
+    res.set('Cache-Control', 'private, max-age=31536000, immutable');
+    res.sendFile(thumb);
+  } catch (e) {
+    next(e);
+  }
+});
 app.use('/files', express.static(config.dataDir));
 
 app.get('/health', (_req: Request, res: Response) => res.json({ ok: true }));

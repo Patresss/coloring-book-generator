@@ -23,7 +23,7 @@ export const ConfirmDeleteDialog: React.FC<ConfirmDeleteDialogProps> = ({ item, 
         {shown?.imageUrl && (
           <Box
             component="img"
-            src={shown.imageUrl}
+            src={shown.thumbUrl || shown.imageUrl}
             alt=""
             sx={{ width: 132, height: 132, objectFit: 'contain', bgcolor: '#fff', borderRadius: '14px', border: `1px solid ${sky.line}`, mb: 2 }}
           />

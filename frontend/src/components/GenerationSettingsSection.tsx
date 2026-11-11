@@ -30,9 +30,10 @@ const errorText = (e: unknown) => {
   }
 };
 
-type Props = { open: boolean };
+// part="mode" shows only the coloring/image switch, part="prompts" only the prompt editors
+type Props = { open: boolean; part?: 'mode' | 'prompts' | 'all' };
 
-export const GenerationSettingsSection: React.FC<Props> = ({ open }) => {
+export const GenerationSettingsSection: React.FC<Props> = ({ open, part = 'all' }) => {
   const [settings, setSettings] = useState<GenerationSettings | null>(null);
   const [drafts, setDrafts] = useState<Record<GenerationMode, string>>({ coloring: '', image: '' });
   const [busy, setBusy] = useState<string | null>(null);
@@ -78,8 +79,9 @@ export const GenerationSettingsSection: React.FC<Props> = ({ open }) => {
 
   return (
     <Box>
-      <Typography variant="subtitle1" fontWeight={600}>Rodzaj obrazków</Typography>
       {error && <Alert severity="error" sx={{ my: 1 }}>{error}</Alert>}
+      {part !== 'prompts' && (<>
+      <Typography variant="subtitle1" fontWeight={600}>Rodzaj obrazków</Typography>
       <FormControlLabel
         sx={{ mt: 0.5 }}
         control={(
@@ -104,8 +106,15 @@ export const GenerationSettingsSection: React.FC<Props> = ({ open }) => {
       {notice?.key === 'mode' && (
         <Typography variant="caption" color="success.main" sx={{ display: 'block' }}>{notice.text}</Typography>
       )}
+      </>)}
 
-      <Box sx={{ mt: 1.5 }}>
+      {part !== 'mode' && (
+      <Box sx={{ mt: part === 'prompts' ? 0 : 1.5 }}>
+        {part === 'prompts' && (
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+            Instrukcja dla AI, która rysuje obrazek. Używany jest prompt aktualnego trybu (Ogólne → Rodzaj obrazków).
+          </Typography>
+        )}
         {PROMPT_SECTIONS.map(({ mode, title }) => {
           const info = settings?.prompts[mode];
           const draft = drafts[mode];
@@ -164,6 +173,7 @@ export const GenerationSettingsSection: React.FC<Props> = ({ open }) => {
           );
         })}
       </Box>
+      )}
     </Box>
   );
 };

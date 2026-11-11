@@ -29,7 +29,7 @@ import { PeopleChips } from './PeopleChips';
 type ProcessingDialogProps = {
   open: boolean;
   status: Status;
-  processMode: 'full' | 'printOnly' | null;
+  processMode: 'full' | 'printOnly' | 'edit' | null;
   prompt: string;
   improveEnabled: boolean;
   improvedPrompt: string | null;
@@ -55,12 +55,13 @@ const STEP_INFO: Record<StepKey, { label: string; title: string; icon: React.Rea
 };
 
 const getSteps = (
-  processMode: 'full' | 'printOnly' | null,
+  processMode: 'full' | 'printOnly' | 'edit' | null,
   includeTranscribeStep: boolean,
   improveEnabled: boolean,
   autoPrint: boolean,
 ): StepKey[] => {
   if (processMode === 'printOnly') return ['printing'];
+  if (processMode === 'edit') return includeTranscribeStep ? ['transcribing', 'generating'] : ['generating'];
   const steps: StepKey[] = [];
   if (includeTranscribeStep) steps.push('transcribing');
   if (improveEnabled) steps.push('improving');
@@ -126,12 +127,17 @@ export const ProcessingDialog: React.FC<ProcessingDialogProps> = ({
   const currentStep = running ? (status as StepKey) : lastStepRef.current;
   const activeIndex = isDone ? steps.length : currentStep ? steps.indexOf(currentStep) : -1;
 
+  const isEdit = processMode === 'edit';
+  const stepInfo = (key: StepKey) =>
+    isEdit && key === 'generating'
+      ? { ...STEP_INFO.generating, label: 'Poprawiam', title: 'Poprawiam rysunek…' }
+      : STEP_INFO[key];
   const title = isError
     ? 'Ups, coś poszło nie tak'
     : isDone
       ? 'Gotowe!'
       : currentStep
-        ? STEP_INFO[currentStep].title
+        ? stepInfo(currentStep).title
         : 'Chwileczkę…';
 
   const showPromptDetails = Boolean(prompt) && processMode !== 'printOnly';
@@ -201,10 +207,10 @@ export const ProcessingDialog: React.FC<ProcessingDialogProps> = ({
             const active = index === activeIndex && !isDone;
             const failed = active && isError;
             return (
-              <Tooltip key={key} title={STEP_INFO[key].label} arrow>
+              <Tooltip key={key} title={stepInfo(key).label} arrow>
                 <Box
                   component="li"
-                  aria-label={`${STEP_INFO[key].label}${done ? ' – gotowe' : failed ? ' – błąd' : active ? ' – w toku' : ''}`}
+                  aria-label={`${stepInfo(key).label}${done ? ' – gotowe' : failed ? ' – błąd' : active ? ' – w toku' : ''}`}
                   sx={{
                     width: 46,
                     height: 46,
@@ -219,7 +225,7 @@ export const ProcessingDialog: React.FC<ProcessingDialogProps> = ({
                     ...noMotion,
                   }}
                 >
-                  {failed ? <PriorityHighRoundedIcon /> : done ? <CheckRoundedIcon /> : STEP_INFO[key].icon}
+                  {failed ? <PriorityHighRoundedIcon /> : done ? <CheckRoundedIcon /> : stepInfo(key).icon}
                 </Box>
               </Tooltip>
             );
@@ -271,7 +277,7 @@ export const ProcessingDialog: React.FC<ProcessingDialogProps> = ({
             </AccordionSummary>
             <AccordionDetails sx={{ px: 1, pt: 0, display: 'flex', flexDirection: 'column', gap: 1.25 }}>
               <Box>
-                <Typography variant="subtitle2" gutterBottom>Pomysł</Typography>
+                <Typography variant="subtitle2" gutterBottom>{isEdit ? 'Poprawka' : 'Pomysł'}</Typography>
                 <Box sx={detailBox}>{prompt}</Box>
               </Box>
               {improveEnabled && improvedPrompt != null && (

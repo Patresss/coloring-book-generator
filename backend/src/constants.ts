@@ -31,6 +31,18 @@ Przypomnienie: wynik ma być w 100% czarno-biały – tylko czarne linie na bia�
 
 export const PROMPT_IMAGE = `Wygeneruj obraz: {temat}`;
 
+// Prompts for correcting an existing picture; {temat} is the requested change
+export const PROMPT_EDIT_COLORING = `Popraw załączony rysunek (pierwszy obrazek) zgodnie z prośbą: {temat}
+
+Zmień tylko to, o co chodzi w prośbie. Zachowaj kompozycję, postacie, styl kreski i wszystkie pozostałe elementy bez zmian.
+Wynik ma pozostać kolorowanką: wyłącznie czarne kontury na białym tle, bez kolorów, szarości, cieniowania i wypełnień. Bez napisów, chyba że prośba wprost o nie prosi.
+Jeśli dołączono kolejne zdjęcia osób, użyj ich, żeby wiernie narysować te osoby – samymi konturami.`;
+
+export const PROMPT_EDIT_IMAGE = `Popraw załączony obraz (pierwszy obrazek) zgodnie z prośbą: {temat}
+
+Zmień tylko to, o co chodzi w prośbie. Zachowaj kompozycję, postacie, styl, kolory i wszystkie pozostałe elementy bez zmian. Bez napisów, chyba że prośba wprost o nie prosi.
+Jeśli dołączono kolejne zdjęcia osób, użyj ich, żeby wiernie odwzorować te osoby.`;
+
 export const PROMPT_IMPROVE = `Ulepsz ten prompt tak, aby powstała kolorowanka dla dzieci. Rozbuduj tylko zawartość kolorowanki, a nie to jak kolorowanka ma wyglądać od strony technicznej, bo tym zajmuje się coś innego. Nie opisuj kolorów (np. „czerwony”, „tęczowy”, „kolorowy”) – obrazek będzie czarno-białą kolorowanką. Zwróć tylko elementy na kolorowance i nic więcej. Oryginalny prompt: `;
 export const PROMPT_IMPROVE_IMAGE = `Ulepsz ten prompt tak, aby powstał ciekawy, szczegółowy obraz. Rozbuduj zawartość sceny: postacie, otoczenie, szczegóły i nastrój. Zwróć tylko opis sceny i nic więcej. Oryginalny prompt: `;
 export const PROMPT_DETECT_REFERENCES = `Wyszukaj wszystkie pliki referencyjne i zwróć je w postaci json: Odpowiedź musi być wyłącznie poprawnym JSON-em, bez dodatkowego tekstu. Możesz zwrócić pustą listę. Pliki referencyjne mają w jakikolwiek sposób pasować do promptu. Czyli jak prompt mówi o jakiejś postaci to zwróć pliki z tą postacią lub grupę pasującą do referencji. `;

@@ -77,7 +77,14 @@ const summarizeParts = (parts: ContentPart[] = []) => parts.map((part) => {
   return 'unknown';
 });
 
-type GeminiOptions = { aspectRatio?: string; model?: string; promptTemplate?: string };
+type GeminiOptions = {
+  aspectRatio?: string;
+  model?: string;
+  promptTemplate?: string;
+  // Editing: a complete prompt (no template) and the picture to change, sent before the references
+  promptOverride?: string;
+  sourceImage?: { data: Buffer; mimeType: string };
+};
 
 // Timeout wrapper for Gemini API calls
 const withTimeout = async <T>(promise: Promise<T>, timeoutMs: number, operation: string): Promise<T> => {
@@ -100,7 +107,7 @@ const withTimeout = async <T>(promise: Promise<T>, timeoutMs: number, operation:
 
 const generateWithGemini = async (subject: string, references: string[] | undefined, opts?: GeminiOptions) => {
   const client = ensureClient();
-  const prompt = buildPrompt(subject, opts?.promptTemplate);
+  const prompt = opts?.promptOverride ?? buildPrompt(subject, opts?.promptTemplate);
   const referenceParts = references?.length ? await loadReferenceParts(references) : [];
 
   if (referenceParts.length === 0 && references?.length) {
@@ -125,8 +132,12 @@ const generateWithGemini = async (subject: string, references: string[] | undefi
   });
 
   // Build contents array: [text, ...references]
+  const sourceParts: InlineDataPart[] = opts?.sourceImage
+    ? [{ inlineData: { data: opts.sourceImage.data.toString('base64'), mimeType: opts.sourceImage.mimeType } }]
+    : [];
   const contents: ContentPart[] = [
     { text: prompt },
+    ...sourceParts,
     ...referenceParts,
   ];
 
@@ -233,4 +244,20 @@ export const generateImageWithReferences = async (subject: string, fileNames: st
   const buffer = await generateWithGemini(subject, fileNames, opts);
   const generationTimeMs = Date.now() - startTime;
   return { buffer, generationTimeMs };
+};
+
+// Changes an existing picture according to an instruction ("add a cat"), keeping everything else.
+export const editImage = async (
+  prompt: string,
+  source: { data: Buffer; mimeType: string },
+  references: string[],
+  opts?: Omit<GeminiOptions, 'promptOverride' | 'sourceImage' | 'promptTemplate'>,
+): Promise<{ buffer: Buffer; generationTimeMs: number }> => {
+  const startTime = Date.now();
+  const buffer = await generateWithGemini(prompt, references.length ? references : undefined, {
+    ...opts,
+    promptOverride: prompt,
+    sourceImage: source,
+  });
+  return { buffer, generationTimeMs: Date.now() - startTime };
 };

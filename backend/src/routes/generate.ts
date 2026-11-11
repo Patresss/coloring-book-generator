@@ -9,6 +9,7 @@ import { isValidId } from '../utils/validation.js';
 import { config } from '../config.js';
 import { getModelCatalog, resolveModel } from '../services/models.js';
 import { promptTemplate, readGenerationSettings } from '../services/generation.js';
+import { ensureThumb } from '../services/thumbs.js';
 
 export const generateRouter = Router();
 
@@ -24,7 +25,9 @@ generateRouter.post('/', async (req: Request, res: Response) => {
     if (!config.geminiApiKey) {
       return res.status(503).json({ error: 'Brak konfiguracji GEMINI_API_KEY – generowanie zablokowane.' });
     }
-    const { id, prompt, landscape, imageModel, references } = req.body || {};
+    const { id, prompt, landscape, imageModel, references, originalPrompt } = req.body || {};
+    // Redrawing from an AI description: keep the child's original idea as the base prompt
+    const basePrompt = typeof originalPrompt === 'string' && originalPrompt.trim() ? originalPrompt.trim() : undefined;
     if (!id || !prompt) return res.status(400).json({ error: 'Brak id lub promptu' });
     if (!isValidId(id)) return res.status(400).json({ error: 'Nieprawidłowe id' });
     const isLandscape = Boolean(landscape);
@@ -58,6 +61,8 @@ generateRouter.post('/', async (req: Request, res: Response) => {
       const meta = await readMeta(id);
       if (meta?.prompt && meta.prompt !== prompt) {
         await updateMeta(id, { improvedPrompt: prompt });
+      } else if (!meta?.prompt && basePrompt && basePrompt !== prompt) {
+        await updateMeta(id, { prompt: basePrompt, improvedPrompt: prompt });
       } else if (!meta?.prompt) {
         await updateMeta(id, { prompt });
       }
@@ -96,6 +101,7 @@ generateRouter.post('/', async (req: Request, res: Response) => {
 
       const imgPath = await saveImageBuffer(id, pngBuffer, EXT_PNG);
       await updateMeta(id, { generationTimeMs, model: resolvedModel, mode });
+      ensureThumb(id).catch(() => {});
       logger.info('Generation: image saved', { id, path: imgPath, generationTimeMs, model: resolvedModel });
       res.json({ imageUrl: `/files/${id}/${FILE_IMAGE_PNG}`, thumbUrl: `/files/${id}/${FILE_IMAGE_PNG}`, path: imgPath });
     } catch (e: any) {

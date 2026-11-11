@@ -45,5 +45,7 @@ export const config = {
   promptImprove: process.env.PROMPT_IMPROVE || constants.PROMPT_IMPROVE,
   promptImage: process.env.PROMPT_IMAGE || constants.PROMPT_IMAGE,
   promptImproveImage: process.env.PROMPT_IMPROVE_IMAGE || constants.PROMPT_IMPROVE_IMAGE,
+  promptEditColoring: process.env.PROMPT_EDIT_COLORING || constants.PROMPT_EDIT_COLORING,
+  promptEditImage: process.env.PROMPT_EDIT_IMAGE || constants.PROMPT_EDIT_IMAGE,
   promptDetectReferences: process.env.PROMPT_DETECT_REFERENCES || constants.PROMPT_DETECT_REFERENCES,
 };
