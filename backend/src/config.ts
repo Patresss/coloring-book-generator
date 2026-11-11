@@ -43,5 +43,7 @@ export const config = {
   // Prompts with environment variable overrides
   promptColoringBook: process.env.PROMPT_COLORING_BOOK || constants.PROMPT_COLORING_BOOK,
   promptImprove: process.env.PROMPT_IMPROVE || constants.PROMPT_IMPROVE,
+  promptImage: process.env.PROMPT_IMAGE || constants.PROMPT_IMAGE,
+  promptImproveImage: process.env.PROMPT_IMPROVE_IMAGE || constants.PROMPT_IMPROVE_IMAGE,
   promptDetectReferences: process.env.PROMPT_DETECT_REFERENCES || constants.PROMPT_DETECT_REFERENCES,
 };

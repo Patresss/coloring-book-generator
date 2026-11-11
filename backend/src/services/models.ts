@@ -1,9 +1,8 @@
-import fs from 'fs/promises';
-import path from 'path';
 import { GoogleGenAI } from '@google/genai';
 import { config } from '../config.js';
 import { logger } from '../utils/logger.js';
 import { createOpenAIClient } from './openai.js';
+import { readSettingsSection, writeSettingsSection } from './settings.js';
 
 export type ModelKind = 'image' | 'text' | 'stt';
 
@@ -27,7 +26,6 @@ const withTimeout = <T>(promise: Promise<T>, label: string): Promise<T> =>
     const t = setTimeout(() => reject(new Error(`Przekroczono czas pobierania listy modeli (${label})`)), FETCH_TIMEOUT_MS);
     promise.then(resolve, reject).finally(() => clearTimeout(t));
   });
-const SETTINGS_FILE = 'settings.json';
 
 // Preferred order when picking the default ("best") model; first available wins.
 const IMAGE_PREFERENCE = [
@@ -190,39 +188,26 @@ export const getModelCatalog = async (refresh = false): Promise<ModelCatalog> =>
 export const recommendedModel = (catalog: ModelCatalog, kind: ModelKind): string | undefined =>
   catalog[kind][0]?.id;
 
-const settingsPath = () => path.join(config.dataDir, SETTINGS_FILE);
-let selectionCache: ModelSelection | null = null;
-
-export const readModelSelection = async (): Promise<ModelSelection> => {
-  if (selectionCache) return selectionCache;
-  try {
-    const raw = JSON.parse(await fs.readFile(settingsPath(), 'utf-8'));
-    const models = raw?.models ?? {};
-    selectionCache = {
-      image: typeof models.image === 'string' ? models.image : undefined,
-      text: typeof models.text === 'string' ? models.text : undefined,
-      stt: typeof models.stt === 'string' ? models.stt : undefined,
-    };
-  } catch {
-    selectionCache = {};
+const pickModels = (raw: Record<string, any>): ModelSelection => {
+  const out: ModelSelection = {};
+  for (const kind of ['image', 'text', 'stt'] as ModelKind[]) {
+    if (typeof raw[kind] === 'string' && raw[kind]) out[kind] = raw[kind];
   }
-  return selectionCache;
+  return out;
 };
 
+export const readModelSelection = async (): Promise<ModelSelection> =>
+  pickModels(await readSettingsSection('models'));
+
 export const saveModelSelection = async (update: ModelSelection): Promise<ModelSelection> => {
-  const current = await readModelSelection();
-  const next: ModelSelection = { ...current };
+  const next: ModelSelection = { ...(await readModelSelection()) };
   for (const kind of ['image', 'text', 'stt'] as ModelKind[]) {
     if (!(kind in update)) continue;
     const value = update[kind];
     if (value) next[kind] = value;
     else delete next[kind]; // empty value = back to the default
   }
-  let existing: any = {};
-  try { existing = JSON.parse(await fs.readFile(settingsPath(), 'utf-8')); } catch {}
-  await fs.mkdir(config.dataDir, { recursive: true });
-  await fs.writeFile(settingsPath(), JSON.stringify({ ...existing, models: next }, null, 2));
-  selectionCache = next;
+  await writeSettingsSection('models', next);
   logger.info('Models: selection saved', next);
   return next;
 };

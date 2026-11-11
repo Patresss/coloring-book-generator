@@ -5,6 +5,7 @@ import { config } from '../config.js';
 import { logger } from '../utils/logger.js';
 import { apiErrorDetails, openAIErrorMessage } from '../utils/apierror.js';
 import { getModel } from './models.js';
+import { defaultImprovePrompt, readGenerationSettings } from './generation.js';
 
 export const createOpenAIClient = () => new OpenAI({
   apiKey: config.openaiApiKey,
@@ -39,8 +40,9 @@ export const improvePrompt = async (original: string): Promise<string> => {
     // Fallback for local dev: return original prompt
     return original;
   }
-  const userPrompt = config.promptImprove + " '" + original + "'";
-  logger.info('OpenAI: improve prompt call', { original });
+  const { mode } = await readGenerationSettings();
+  const userPrompt = defaultImprovePrompt(mode) + " '" + original + "'";
+  logger.info('OpenAI: improve prompt call', { original, mode });
 
   const client = getClient();
   const chatModel = await getModel('text');

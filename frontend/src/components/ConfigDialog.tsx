@@ -22,6 +22,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import { SelectChangeEvent } from '@mui/material/Select';
 import { api, ModelKind, ModelsInfo, RuntimeConfig } from '../api/client';
+import { GenerationSettingsSection } from './GenerationSettingsSection';
 
 type ConfigDialogProps = {
   open: boolean;
@@ -113,6 +114,10 @@ export const ConfigDialog: React.FC<ConfigDialogProps> = ({ open, runtimeConfig,
             {' '}— instrukcje, zmiany i źródła.
           </Typography>
         </Box>
+        <Divider sx={{ my: 2 }} />
+
+        <GenerationSettingsSection open={open} />
+
         <Divider sx={{ my: 2 }} />
 
         <Stack direction="row" alignItems="center" justifyContent="space-between">

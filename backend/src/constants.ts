@@ -13,8 +13,26 @@ export const IMAGE_A4_WIDTH = 2480; // ~210mm @ 300 DPI
 export const IMAGE_A4_HEIGHT = 3508; // ~297mm @ 300 DPI
 
 // Prompts
-export const PROMPT_COLORING_BOOK = `Narysuj czarno-białą ilustrację do kolorowania (bez tła, brak szarości, brak cieniowania, brak wypełnień np. bluzek - tylko kontury, bez ramek, obrazek binarny - tylko czerń i biel). Nie dodawaj żadnego tekstu na obrazku, chyba że jest to wprost powiedziane (to, że chcę aby np. wygenerować Wiktora to nie znaczy, że chcę napis Wiktor). Jeśli podałem jakieś referencje (inlineData) to niech one będą szczegółowe i wiernie oddawały wysłane pliki jeśli chodzi o twarze. Temat: `;
-export const PROMPT_IMPROVE = `Ulepsz ten prompt tak, aby powstała kolorowanka dla dzieci. Rozbuduj tylko zawartość kolorowanki, a nie to jak kolorowanka ma wyglądać od strony technicznej, bo tym zajmuje się coś innego. Zwróć tylko elementy na kolorowance i nic więcej. Oryginalny prompt: `;
+// Placeholder replaced with the user's subject; if missing, the subject is appended at the end.
+export const PROMPT_SUBJECT_PLACEHOLDER = '{temat}';
+
+export const PROMPT_COLORING_BOOK = `Stwórz stronę z kolorowanki dla dzieci: czarno-biały rysunek liniowy (line art), gotowy do wydruku i pokolorowania kredkami.
+
+Zasady obowiązkowe:
+- Wyłącznie czarne kontury na czystym, białym tle. Zero kolorów w jakimkolwiek elemencie – także na słodyczach, owocach, ubraniach, niebie czy kwiatach.
+- Żadnych wypełnień, szarości, cieniowania, gradientów, kreskowania ani tekstur. Wnętrze każdego konturu zostaje białe.
+- Wyraźne, zamknięte kontury o równej grubości. Elementy na tyle duże, żeby dziecko mogło je pokolorować.
+- Bez ramki. Bez napisów, liter i cyfr, chyba że temat wprost o nie prosi (imię osoby w temacie to nie prośba o napis).
+- Jeśli dołączono zdjęcia referencyjne osób: wiernie odwzoruj ich twarze, fryzury i charakterystyczne cechy, ale narysuj je samymi czarnymi konturami – nie przenoś kolorów ze zdjęć.
+
+Temat: {temat}
+
+Przypomnienie: wynik ma być w 100% czarno-biały – tylko czarne linie na białym tle, bez żadnego koloru i bez szarych wypełnień.`;
+
+export const PROMPT_IMAGE = `Wygeneruj obraz: {temat}`;
+
+export const PROMPT_IMPROVE = `Ulepsz ten prompt tak, aby powstała kolorowanka dla dzieci. Rozbuduj tylko zawartość kolorowanki, a nie to jak kolorowanka ma wyglądać od strony technicznej, bo tym zajmuje się coś innego. Nie opisuj kolorów (np. „czerwony”, „tęczowy”, „kolorowy”) – obrazek będzie czarno-białą kolorowanką. Zwróć tylko elementy na kolorowance i nic więcej. Oryginalny prompt: `;
+export const PROMPT_IMPROVE_IMAGE = `Ulepsz ten prompt tak, aby powstał ciekawy, szczegółowy obraz. Rozbuduj zawartość sceny: postacie, otoczenie, szczegóły i nastrój. Zwróć tylko opis sceny i nic więcej. Oryginalny prompt: `;
 export const PROMPT_DETECT_REFERENCES = `Wyszukaj wszystkie pliki referencyjne i zwróć je w postaci json: Odpowiedź musi być wyłącznie poprawnym JSON-em, bez dodatkowego tekstu. Możesz zwrócić pustą listę. Pliki referencyjne mają w jakikolwiek sposób pasować do promptu. Czyli jak prompt mówi o jakiejś postaci to zwróć pliki z tą postacią lub grupę pasującą do referencji. `;
 
 // Printing defaults (IPP)

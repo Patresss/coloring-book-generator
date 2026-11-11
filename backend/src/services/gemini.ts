@@ -4,6 +4,7 @@ import mime from 'mime-types';
 import { GoogleGenAI } from '@google/genai';
 import { config } from '../config.js';
 import { logger } from '../utils/logger.js';
+import { buildImagePrompt } from './generation.js';
 
 const ensureClient = () => {
   if (!config.geminiApiKey) {
@@ -15,7 +16,8 @@ const ensureClient = () => {
   });
 };
 
-const buildPrompt = (subject: string) => `${config.promptColoringBook} '${subject}'`;
+// Template defaults to the coloring-book prompt; generate route passes the one from settings
+const buildPrompt = (subject: string, template?: string) => buildImagePrompt(template || config.promptColoringBook, subject);
 
 interface InlineDataPart {
   inlineData: {
@@ -75,7 +77,7 @@ const summarizeParts = (parts: ContentPart[] = []) => parts.map((part) => {
   return 'unknown';
 });
 
-type GeminiOptions = { aspectRatio?: string; model?: string };
+type GeminiOptions = { aspectRatio?: string; model?: string; promptTemplate?: string };
 
 // Timeout wrapper for Gemini API calls
 const withTimeout = async <T>(promise: Promise<T>, timeoutMs: number, operation: string): Promise<T> => {
@@ -98,7 +100,7 @@ const withTimeout = async <T>(promise: Promise<T>, timeoutMs: number, operation:
 
 const generateWithGemini = async (subject: string, references: string[] | undefined, opts?: GeminiOptions) => {
   const client = ensureClient();
-  const prompt = buildPrompt(subject);
+  const prompt = buildPrompt(subject, opts?.promptTemplate);
   const referenceParts = references?.length ? await loadReferenceParts(references) : [];
 
   if (referenceParts.length === 0 && references?.length) {

@@ -52,6 +52,17 @@ export type ModelsInfo = Record<ModelKind, ModelKindInfo> & {
   errors: Partial<Record<'gemini' | 'openai', string>>;
 };
 
+export type GenerationMode = 'coloring' | 'image';
+export type PromptInfo = { value: string; default: string; custom: boolean };
+export type GenerationSettings = {
+  mode: GenerationMode;
+  prompts: Record<GenerationMode, PromptInfo>;
+};
+export type GenerationSettingsUpdate = {
+  mode?: GenerationMode;
+  prompts?: Partial<Record<GenerationMode, string | null>>;
+};
+
 export const getConfig = async (): Promise<RuntimeConfig> => {
   const res = await safeFetch('/api/config');
   if (!res.ok) throw new Error(await safeText(res));
@@ -134,6 +145,20 @@ export const api = {
       if (!res.ok) throw new Error(await safeText(res));
       return res.json();
     }, 60000);
+  },
+  async getGenerationSettings(): Promise<GenerationSettings> {
+    return withTimeout(async (signal) => {
+      const res = await safeFetch('/api/settings/generation', { signal });
+      if (!res.ok) throw new Error(await safeText(res));
+      return res.json();
+    }, 30000);
+  },
+  async saveGenerationSettings(update: GenerationSettingsUpdate): Promise<GenerationSettings> {
+    return withTimeout(async (signal) => {
+      const res = await safeFetch('/api/settings/generation', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(update), signal });
+      if (!res.ok) throw new Error(await safeText(res));
+      return res.json();
+    }, 30000);
   },
   async print(id: string): Promise<{ jobId: string }>{
     return postJson('/api/print', { id });

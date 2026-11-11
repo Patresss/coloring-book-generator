@@ -8,6 +8,7 @@ import path from 'path';
 import { isValidId } from '../utils/validation.js';
 import { config } from '../config.js';
 import { getModelCatalog, resolveModel } from '../services/models.js';
+import { promptTemplate, readGenerationSettings } from '../services/generation.js';
 
 export const generateRouter = Router();
 
@@ -70,7 +71,10 @@ generateRouter.post('/', async (req: Request, res: Response) => {
       }
       let pngBuffer: Buffer;
       let generationTimeMs: number;
-      const generationOpts = { aspectRatio, model: resolvedModel };
+      const generationSettings = await readGenerationSettings();
+      const mode = generationSettings.mode;
+      const generationOpts = { aspectRatio, model: resolvedModel, promptTemplate: promptTemplate(generationSettings) };
+      logger.info('Generation: mode', { id, mode, customPrompt: generationSettings.prompts[mode] !== undefined });
       if (refs.length > 0) {
         try {
           const result = await generateImageWithReferences(prompt, refs, generationOpts);
@@ -91,7 +95,7 @@ generateRouter.post('/', async (req: Request, res: Response) => {
       }
 
       const imgPath = await saveImageBuffer(id, pngBuffer, EXT_PNG);
-      await updateMeta(id, { generationTimeMs, model: resolvedModel });
+      await updateMeta(id, { generationTimeMs, model: resolvedModel, mode });
       logger.info('Generation: image saved', { id, path: imgPath, generationTimeMs, model: resolvedModel });
       res.json({ imageUrl: `/files/${id}/${FILE_IMAGE_PNG}`, thumbUrl: `/files/${id}/${FILE_IMAGE_PNG}`, path: imgPath });
     } catch (e: any) {

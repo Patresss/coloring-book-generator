@@ -13,6 +13,8 @@ services:
       # OPCJONALNE - Dostosowanie promptów systemowych
       # - PROMPT_COLORING_BOOK= # Główny prompt dla Gemini (instrukcje rysowania kolorowanki)
       # - PROMPT_IMPROVE= # Prompt dla GPT do ulepszania promptów użytkownika
+      # - PROMPT_IMAGE=  # Prompt dla Gemini w trybie zwykłych obrazów (nadpisywany w ustawieniach aplikacji)
+      # - PROMPT_IMPROVE_IMAGE=  # Prompt dla GPT do ulepszania promptów w trybie zwykłych obrazów
       # - PROMPT_DETECT_REFERENCES= # Prompt dla GPT do wykrywania referencji z plików
     volumes:
       - ./data:/data
