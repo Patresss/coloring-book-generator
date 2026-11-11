@@ -12,7 +12,7 @@ const upload = multer({
   fileFilter: (_req, file, cb) => {
     const ok = (
       file.mimetype.startsWith('audio/') ||
-      ['video/webm'].includes(file.mimetype)
+      ['video/webm', 'video/mp4'].includes(file.mimetype)
     );
     if (!ok) return cb(new Error('Niedozwolony typ pliku'));
     cb(null, true);

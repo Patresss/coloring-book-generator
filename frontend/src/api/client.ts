@@ -127,7 +127,10 @@ export const api = {
   setTimeoutMs,
   async transcribe(audio: Blob): Promise<{ id: string; prompt: string }> {
     const form = new FormData();
-    form.append('audio', audio, 'audio.webm');
+    // The server (and OpenAI) recognise the format by extension; Safari records mp4, Chrome webm
+    const type = audio.type || 'audio/webm';
+    const ext = type.includes('mp4') || type.includes('aac') ? 'mp4' : type.includes('ogg') ? 'ogg' : type.includes('wav') ? 'wav' : 'webm';
+    form.append('audio', audio, `audio.${ext}`);
     return withTimeout(async (signal) => {
       const res = await safeFetch('/api/transcribe', { method: 'POST', body: form, signal });
       if (!res.ok) throw new Error(await safeText(res));

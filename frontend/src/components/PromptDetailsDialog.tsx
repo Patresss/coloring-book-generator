@@ -11,6 +11,8 @@ import {
 } from '@mui/material';
 import AutorenewRoundedIcon from '@mui/icons-material/AutorenewRounded';
 import AutoFixHighRoundedIcon from '@mui/icons-material/AutoFixHighRounded';
+import PictureAsPdfRoundedIcon from '@mui/icons-material/PictureAsPdfRounded';
+import { downloadPdf } from '../utils/share';
 import { HistoryItem } from '../api/client';
 import { PeopleChips } from './PeopleChips';
 import { formatWhen } from './HistoryList';
@@ -106,6 +108,11 @@ export const PromptDetailsDialog: React.FC<PromptDetailsDialogProps> = ({ item, 
         <Button onClick={onClose} sx={{ borderRadius: 999 }}>
           Zamknij
         </Button>
+        {shown?.imageUrl && (
+          <Button variant="outlined" startIcon={<PictureAsPdfRoundedIcon />} onClick={() => downloadPdf(shown)} sx={{ borderRadius: 999 }}>
+            Pobierz PDF
+          </Button>
+        )}
         {shown && (shown.prompt || shown.improvedPrompt) && (
           <Button
             variant="contained"

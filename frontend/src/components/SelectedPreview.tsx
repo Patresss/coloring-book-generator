@@ -5,6 +5,9 @@ import AutorenewRoundedIcon from '@mui/icons-material/AutorenewRounded';
 import PrintRoundedIcon from '@mui/icons-material/PrintRounded';
 import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import ShareRoundedIcon from '@mui/icons-material/ShareRounded';
+import { PencilReveal } from './PencilReveal';
+import { loadShareFile, shareOrDownload } from '../utils/share';
 import MicRoundedIcon from '@mui/icons-material/MicRounded';
 import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded';
 import CheckRoundedIcon from '@mui/icons-material/CheckRounded';
@@ -24,6 +27,10 @@ type SelectedPreviewProps = {
   onPrint: () => void;
   onDelete: () => void;
   onShowDetails: () => void;
+  // Freshly created picture: draw it with the pencil animation
+  animateReveal: boolean;
+  onRevealStart: (durationMs: number, strokes: number) => void;
+  onRevealDone: () => void;
   canEdit: boolean;
   editRecording: boolean;
   onEditVoice: () => void;
@@ -151,6 +158,7 @@ const revealSweep = keyframes`
 `;
 
 type ActionButtonProps = {
+  size?: number;
   label: string;
   color: string;
   onClick: () => void;
@@ -158,7 +166,7 @@ type ActionButtonProps = {
   children: React.ReactNode;
 };
 
-const ActionButton: React.FC<ActionButtonProps> = ({ label, color, onClick, disabled, children }) => (
+const ActionButton: React.FC<ActionButtonProps> = ({ size = 56, label, color, onClick, disabled, children }) => (
   <Tooltip title={label} arrow placement="left">
     <span>
       <ButtonBase
@@ -166,8 +174,8 @@ const ActionButton: React.FC<ActionButtonProps> = ({ label, color, onClick, disa
         disabled={disabled}
         aria-label={label}
         sx={{
-          width: 56,
-          height: 56,
+          width: size,
+          height: size,
           borderRadius: '50%',
           bgcolor: color,
           color: '#fff',
@@ -177,7 +185,7 @@ const ActionButton: React.FC<ActionButtonProps> = ({ label, color, onClick, disa
           '&:active': { scale: '0.94' },
           '&.Mui-disabled': { opacity: 0.4 },
           '&.Mui-focusVisible': { outline: `3px solid ${sky.blue}`, outlineOffset: 3 },
-          '& svg': { fontSize: 28 },
+          '& svg': { fontSize: size >= 56 ? 28 : 24 },
         }}
       >
         {children}
@@ -196,6 +204,9 @@ export const SelectedPreview: React.FC<SelectedPreviewProps> = ({
   onPrint,
   onDelete,
   onShowDetails,
+  animateReveal,
+  onRevealStart,
+  onRevealDone,
   canEdit,
   editRecording,
   onEditVoice,
@@ -206,6 +217,14 @@ export const SelectedPreview: React.FC<SelectedPreviewProps> = ({
   const actionsDisabled = !(status === 'idle' || status === 'done' || status === 'error');
   const [imageLoaded, setImageLoaded] = React.useState(false);
   const imgRef = React.useRef<HTMLImageElement | null>(null);
+  const [shareFile, setShareFile] = React.useState<File | null>(null);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    setShareFile(null);
+    loadShareFile(item).then((file) => { if (!cancelled) setShareFile(file); });
+    return () => { cancelled = true; };
+  }, [item.id, item.imageUrl]);
   const [showReveal, setShowReveal] = React.useState(true);
 
   React.useEffect(() => {
@@ -242,7 +261,10 @@ export const SelectedPreview: React.FC<SelectedPreviewProps> = ({
               decoding="async"
               ref={imgRef}
               onLoad={() => setImageLoaded(true)}
-              onError={() => setImageLoaded(true)}
+              onError={() => {
+                setImageLoaded(true);
+                if (animateReveal) onRevealDone();
+              }}
               sx={{
                 display: 'block',
                 width: 'auto',
@@ -255,12 +277,16 @@ export const SelectedPreview: React.FC<SelectedPreviewProps> = ({
                   maxHeight: isMobile ? 'calc(100cqh - 150px)' : 'calc(100cqh - 72px)',
                 },
                 objectFit: 'contain',
-                opacity: imageLoaded ? 1 : 0,
-                transform: imageLoaded ? 'scale(1)' : 'scale(0.96)',
+                // During the pencil reveal the picture sits under the white sheet right away
+                opacity: imageLoaded || animateReveal ? 1 : 0,
+                transform: imageLoaded || animateReveal ? 'scale(1)' : 'scale(0.96)',
                 transition: 'opacity 0.5s ease, transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)',
               }}
             />
-            {showReveal && imageLoaded && (
+            {animateReveal && (
+              <PencilReveal active={imageLoaded} onStart={onRevealStart} onDone={onRevealDone} />
+            )}
+            {!animateReveal && showReveal && imageLoaded && (
               <Box
                 sx={{
                   position: 'absolute',
@@ -282,24 +308,29 @@ export const SelectedPreview: React.FC<SelectedPreviewProps> = ({
           />
         </Box>
       )}
-      <Box sx={{ display: 'flex', flexDirection: isMobile ? 'row' : 'column', gap: 1.5, flex: 'none' }}>
-        <ActionButton label="Zamknij podgląd" color={sky.ink} onClick={onClose} disabled={editRecording}>
+      <Box sx={{ display: 'flex', flexDirection: isMobile ? 'row' : 'column', gap: isMobile ? 1 : 1.5, flex: 'none' }}>
+        <ActionButton size={isMobile ? 48 : 56} label="Zamknij podgląd" color={sky.ink} onClick={onClose} disabled={editRecording}>
           <CloseRoundedIcon />
         </ActionButton>
-        <ActionButton label="Szczegóły" color="#0EA5E9" onClick={onShowDetails}>
+        <ActionButton size={isMobile ? 48 : 56} label="Szczegóły" color="#0EA5E9" onClick={onShowDetails}>
           <InfoOutlinedIcon />
         </ActionButton>
         {item.imageUrl && (
-          <ActionButton label="Narysuj jeszcze raz" color="#3B82F6" onClick={onRegenerate} disabled={actionsDisabled}>
+          <ActionButton size={isMobile ? 48 : 56} label="Narysuj jeszcze raz" color="#3B82F6" onClick={onRegenerate} disabled={actionsDisabled}>
             <AutorenewRoundedIcon />
           </ActionButton>
         )}
+        {item.imageUrl && (
+          <ActionButton size={isMobile ? 48 : 56} label="Wyślij" color="#F97316" onClick={() => shareOrDownload(item, shareFile)}>
+            <ShareRoundedIcon />
+          </ActionButton>
+        )}
         {item.id && (
-          <ActionButton label="Drukuj" color={sky.green} onClick={onPrint} disabled={actionsDisabled}>
+          <ActionButton size={isMobile ? 48 : 56} label="Drukuj" color={sky.green} onClick={onPrint} disabled={actionsDisabled}>
             <PrintRoundedIcon />
           </ActionButton>
         )}
-        <ActionButton label="Usuń kolorowankę" color="#EF4444" onClick={onDelete} disabled={actionsDisabled}>
+        <ActionButton size={isMobile ? 48 : 56} label="Usuń kolorowankę" color="#EF4444" onClick={onDelete} disabled={actionsDisabled}>
           <DeleteRoundedIcon />
         </ActionButton>
       </Box>
