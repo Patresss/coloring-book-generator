@@ -11,6 +11,8 @@ import HistoryRoundedIcon from '@mui/icons-material/HistoryRounded';
 import BrushRoundedIcon from '@mui/icons-material/BrushRounded';
 import TuneRoundedIcon from '@mui/icons-material/TuneRounded';
 import GroupsRoundedIcon from '@mui/icons-material/GroupsRounded';
+import InstallMobileRoundedIcon from '@mui/icons-material/InstallMobileRounded';
+import { usePwaInstall } from '../pwa';
 import VolumeUpRoundedIcon from '@mui/icons-material/VolumeUpRounded';
 import VolumeOffRoundedIcon from '@mui/icons-material/VolumeOffRounded';
 import { keyframes } from '@mui/system';
@@ -68,7 +70,9 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   onOpenConfig,
   onOpenReferences,
   onGoHome,
-}) => (
+}) => {
+  const { canInstall, install } = usePwaInstall();
+  return (
   <AppBar position="fixed" elevation={0}>
     <Toolbar sx={{ px: { xs: 1, sm: 2.5 }, gap: { xs: 0.75, sm: 1 } }}>
       {isMobile && (
@@ -109,6 +113,12 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
         />
       </ButtonBase>
       <Box sx={{ flexGrow: 1 }} />
+      {/* Shown only while Chrome offers installation; hidden on phones where the header is full */}
+      {canInstall && !isMobile && (
+        <HeaderButton label="Zainstaluj aplikację" onClick={() => { install(); }}>
+          <InstallMobileRoundedIcon />
+        </HeaderButton>
+      )}
       <HeaderButton
         label={sfxEnabled ? 'Dźwięki włączone' : 'Dźwięki wyłączone'}
         onClick={() => onToggleSfx(!sfxEnabled)}
@@ -125,3 +135,4 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
     </Toolbar>
   </AppBar>
 );
+};

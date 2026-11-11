@@ -5,6 +5,7 @@ import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { theme } from './theme';
 import '@fontsource-variable/nunito';
+import './pwa';
 
 const root = createRoot(document.getElementById('root')!);
 root.render(

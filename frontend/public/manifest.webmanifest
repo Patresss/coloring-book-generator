@@ -1,9 +1,22 @@
 {
-  "name": "Generator kolorowanek",
+  "id": "/",
+  "name": "Kolorowanki – generator kolorowanek",
   "short_name": "Kolorowanki",
+  "description": "Powiedz, co narysować, a aplikacja przygotuje kolorowankę do wydruku.",
+  "lang": "pl",
+  "dir": "ltr",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "any",
   "background_color": "#E3F2FF",
   "theme_color": "#FFFFFF",
-  "icons": []
+  "categories": ["kids", "education", "entertainment"],
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
 }
