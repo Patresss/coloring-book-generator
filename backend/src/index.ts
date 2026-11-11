@@ -15,6 +15,7 @@ import { authRouter } from './routes/auth.js';
 import { referencesRouter } from './routes/references.js';
 import { modelsRouter } from './routes/models.js';
 import { settingsRouter } from './routes/settings.js';
+import { makeRateLimit } from './utils/rateLimit.js';
 
 const app = express();
 
@@ -32,27 +33,6 @@ app.use((req: Request, _res: Response, next: NextFunction) => {
   next();
 });
 
-// Simple in-memory rate limiter per IP for critical endpoints
-type RateState = { count: number; windowStart: number };
-const rateMap = new Map<string, RateState>();
-const makeRateLimit = (max: number, windowMs: number) => {
-  return (req: Request, res: Response, next: NextFunction) => {
-    const key = `${req.ip}`;
-    const now = Date.now();
-    const state = rateMap.get(key) || { count: 0, windowStart: now };
-    if (now - state.windowStart > windowMs) {
-      state.count = 0;
-      state.windowStart = now;
-    }
-    state.count += 1;
-    rateMap.set(key, state);
-    if (state.count > max) {
-      return res.status(429).json({ error: 'Too many requests, please slow down.' });
-    }
-    next();
-  };
-};
-
 // API routes
 // Auth endpoints first (login/logout/page), unprotected
 app.use('/api/auth', authRouter);
@@ -64,7 +44,7 @@ app.use(authRequired);
 app.use('/api/transcribe', makeRateLimit(10, 60_000), transcribeRouter);
 app.use('/api/generate', makeRateLimit(15, 60_000), generateRouter);
 app.use('/api/improve', makeRateLimit(20, 60_000), improveRouter);
-app.use('/api/references', makeRateLimit(20, 60_000), referencesRouter);
+app.use('/api/references', referencesRouter); // rate limits are set per route inside
 app.use('/api/print', printRouter);
 app.use('/api/history', historyRouter);
 app.use('/api/config', configRouter);

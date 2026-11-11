@@ -63,6 +63,8 @@ export type GenerationSettingsUpdate = {
   prompts?: Partial<Record<GenerationMode, string | null>>;
 };
 
+export type ReferenceItem = { name: string; size: number; updatedAt: number; url: string };
+
 export const getConfig = async (): Promise<RuntimeConfig> => {
   const res = await safeFetch('/api/config');
   if (!res.ok) throw new Error(await safeText(res));
@@ -156,6 +158,42 @@ export const api = {
   async saveGenerationSettings(update: GenerationSettingsUpdate): Promise<GenerationSettings> {
     return withTimeout(async (signal) => {
       const res = await safeFetch('/api/settings/generation', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(update), signal });
+      if (!res.ok) throw new Error(await safeText(res));
+      return res.json();
+    }, 30000);
+  },
+  async listReferences(): Promise<ReferenceItem[]> {
+    return withTimeout(async (signal) => {
+      const res = await safeFetch('/api/references', { signal });
+      if (!res.ok) throw new Error(await safeText(res));
+      return res.json();
+    }, 30000);
+  },
+  async addReference(image: File, name: string): Promise<ReferenceItem> {
+    const form = new FormData();
+    form.append('name', name);
+    form.append('image', image, image.name || 'zdjecie.jpg');
+    return withTimeout(async (signal) => {
+      const res = await safeFetch('/api/references', { method: 'POST', body: form, signal });
+      if (!res.ok) throw new Error(await safeText(res));
+      return res.json();
+    }, 120000);
+  },
+  async renameReference(fileName: string, name: string): Promise<ReferenceItem> {
+    return withTimeout(async (signal) => {
+      const res = await safeFetch(`/api/references/${encodeURIComponent(fileName)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name }),
+        signal,
+      });
+      if (!res.ok) throw new Error(await safeText(res));
+      return res.json();
+    }, 30000);
+  },
+  async deleteReference(fileName: string): Promise<{ ok: true }> {
+    return withTimeout(async (signal) => {
+      const res = await safeFetch(`/api/references/${encodeURIComponent(fileName)}`, { method: 'DELETE', signal });
       if (!res.ok) throw new Error(await safeText(res));
       return res.json();
     }, 30000);

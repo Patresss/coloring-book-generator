@@ -12,15 +12,27 @@ type PeopleChipsProps = {
 
 const AVATAR_COLORS = ['#FFC4D6', '#BCDCFF', '#C9F0C2', '#FFE3A3', '#E6D4FF', '#FFD9B8', '#B9F0EC', '#FFD0D0'];
 
-// "Achim - Dziadek" -> { name: "Achim", role: "dziadek" }; "Halszka" -> { name: "Halszka" }
-export const parsePerson = (fileName: string): { name: string; role?: string } => {
+// "Achim - Dziadek.jpg" -> { name: "Achim", role: "Dziadek" }; "Halszka.jpg" -> { name: "Halszka", role: "" }
+export const splitPersonName = (fileName: string): { name: string; role: string } => {
   const base = stripExtension(fileName).trim();
   const [name, ...rest] = base.split(/\s+[-–—]\s+/);
-  const role = rest.join(' ').trim();
-  return { name: name.trim() || base, role: role ? role.toLocaleLowerCase('pl-PL') : undefined };
+  return { name: name.trim() || base, role: rest.join(' - ').trim() };
 };
 
-const colorFor = (value: string) => {
+// Inverse of splitPersonName: "Achim" + "Dziadek" -> "Achim - Dziadek"
+export const joinPersonName = (name: string, role: string): string => {
+  const n = name.replace(/\s+/g, ' ').trim();
+  const r = role.replace(/\s+/g, ' ').trim();
+  return r ? `${n} - ${r}` : n;
+};
+
+// Display form with a lowercase role: "Achim" + "dziadek"
+export const parsePerson = (fileName: string): { name: string; role?: string } => {
+  const { name, role } = splitPersonName(fileName);
+  return { name, role: role ? role.toLocaleLowerCase('pl-PL') : undefined };
+};
+
+export const colorFor = (value: string) => {
   let hash = 0;
   for (const ch of value) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
   return AVATAR_COLORS[hash % AVATAR_COLORS.length];

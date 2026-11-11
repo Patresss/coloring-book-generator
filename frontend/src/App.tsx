@@ -15,6 +15,7 @@ import { ProcessingDialog } from './components/ProcessingDialog';
 import { ConfigDialog } from './components/ConfigDialog';
 import { PromptDetailsDialog } from './components/PromptDetailsDialog';
 import { ConfirmDeleteDialog } from './components/ConfirmDeleteDialog';
+import { ReferencesDialog } from './components/ReferencesDialog';
 import { LoginOverlay } from './components/LoginOverlay';
 import { MissingEnvNotice } from './components/MissingEnvNotice';
 import { Status } from './types/status';
@@ -64,6 +65,7 @@ export const App: React.FC = () => {
   const [errorText, setErrorText] = useState<string | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [configOpen, setConfigOpen] = useState(false);
+  const [referencesOpen, setReferencesOpen] = useState(false);
   const [promptInfoItem, setPromptInfoItem] = useState<HistoryItem | null>(null);
   const [pendingDelete, setPendingDelete] = useState<HistoryItem | null>(null);
   const [runtimeConfig, setRuntimeConfig] = useState<RuntimeConfig | null>(null);
@@ -562,6 +564,7 @@ export const App: React.FC = () => {
         onToggleSfx={setSfxEnabled}
         onOpenHistory={() => setHistoryOpen(true)}
         onOpenConfig={async () => { await ensureConfigLoaded(); setConfigOpen(true); }}
+        onOpenReferences={() => setReferencesOpen(true)}
         onGoHome={goHome}
       />
       <Box sx={{ display: 'flex', flex: 1, minHeight: 0, pt: { xs: 7, sm: 8 }, position: 'relative', zIndex: 1 }}>
@@ -644,7 +647,9 @@ export const App: React.FC = () => {
         open={configOpen}
         runtimeConfig={runtimeConfig}
         onClose={() => { setConfigOpen(false); ensureConfigLoaded(); }}
+        onOpenReferences={() => { setConfigOpen(false); setReferencesOpen(true); }}
       />
+      <ReferencesDialog open={referencesOpen} isMobile={isMobile} onClose={() => setReferencesOpen(false)} />
       {isMobile && (
         <HistoryDialog
           open={historyOpen}

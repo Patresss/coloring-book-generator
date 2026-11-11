@@ -20,6 +20,7 @@ import {
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import GroupsRoundedIcon from '@mui/icons-material/GroupsRounded';
 import { SelectChangeEvent } from '@mui/material/Select';
 import { api, ModelKind, ModelsInfo, RuntimeConfig } from '../api/client';
 import { GenerationSettingsSection } from './GenerationSettingsSection';
@@ -28,6 +29,7 @@ type ConfigDialogProps = {
   open: boolean;
   runtimeConfig: RuntimeConfig | null;
   onClose: () => void;
+  onOpenReferences: () => void;
 };
 
 const MODEL_SECTIONS: { kind: ModelKind; title: string; provider: string }[] = [
@@ -53,7 +55,7 @@ const ValueBox: React.FC<{ children: React.ReactNode; breakAll?: boolean }> = ({
   </Box>
 );
 
-export const ConfigDialog: React.FC<ConfigDialogProps> = ({ open, runtimeConfig, onClose }) => {
+export const ConfigDialog: React.FC<ConfigDialogProps> = ({ open, runtimeConfig, onClose, onOpenReferences }) => {
   const [models, setModels] = useState<ModelsInfo | null>(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState<ModelKind | null>(null);
@@ -114,6 +116,20 @@ export const ConfigDialog: React.FC<ConfigDialogProps> = ({ open, runtimeConfig,
             {' '}— instrukcje, zmiany i źródła.
           </Typography>
         </Box>
+        <Divider sx={{ my: 2 }} />
+
+        <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={2}>
+          <Box>
+            <Typography variant="subtitle1" fontWeight={600}>Osoby z rodziny</Typography>
+            <Typography variant="caption" color="text.secondary">
+              Zdjęcia referencyjne – dodawanie, zmiana nazwy i usuwanie.
+            </Typography>
+          </Box>
+          <Button variant="outlined" startIcon={<GroupsRoundedIcon />} onClick={onOpenReferences} sx={{ borderRadius: 999, flex: 'none' }}>
+            Zarządzaj
+          </Button>
+        </Stack>
+
         <Divider sx={{ my: 2 }} />
 
         <GenerationSettingsSection open={open} />

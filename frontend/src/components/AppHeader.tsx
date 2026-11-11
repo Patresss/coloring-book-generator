@@ -10,6 +10,7 @@ import {
 import HistoryRoundedIcon from '@mui/icons-material/HistoryRounded';
 import BrushRoundedIcon from '@mui/icons-material/BrushRounded';
 import TuneRoundedIcon from '@mui/icons-material/TuneRounded';
+import GroupsRoundedIcon from '@mui/icons-material/GroupsRounded';
 import VolumeUpRoundedIcon from '@mui/icons-material/VolumeUpRounded';
 import VolumeOffRoundedIcon from '@mui/icons-material/VolumeOffRounded';
 import { keyframes } from '@mui/system';
@@ -21,6 +22,7 @@ type AppHeaderProps = {
   onToggleSfx: (value: boolean) => void;
   onOpenHistory: () => void;
   onOpenConfig: () => void;
+  onOpenReferences: () => void;
   onGoHome: () => void;
 };
 
@@ -64,10 +66,11 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   onToggleSfx,
   onOpenHistory,
   onOpenConfig,
+  onOpenReferences,
   onGoHome,
 }) => (
   <AppBar position="fixed" elevation={0}>
-    <Toolbar sx={{ px: { xs: 1.5, sm: 2.5 }, gap: 1 }}>
+    <Toolbar sx={{ px: { xs: 1, sm: 2.5 }, gap: { xs: 0.75, sm: 1 } }}>
       {isMobile && (
         <HeaderButton label="Twoje kolorowanki" onClick={onOpenHistory}>
           <HistoryRoundedIcon />
@@ -80,7 +83,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           color: sky.ink,
           fontFamily: 'inherit',
           fontWeight: 800,
-          fontSize: { xs: '1.3rem', sm: '1.45rem' },
+          fontSize: { xs: '1.2rem', sm: '1.45rem' },
           letterSpacing: '-0.2px',
           borderRadius: 2,
           px: 0.75,
@@ -97,6 +100,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
         <BrushRoundedIcon
           sx={{
             fontSize: 24,
+            display: { xs: 'none', sm: 'inline-block' },
             color: sky.blue,
             animation: `${wiggle} 2.4s ease-in-out infinite`,
             transformOrigin: 'bottom center',
@@ -111,6 +115,9 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
         pressed={sfxEnabled}
       >
         {sfxEnabled ? <VolumeUpRoundedIcon /> : <VolumeOffRoundedIcon />}
+      </HeaderButton>
+      <HeaderButton label="Osoby z rodziny" onClick={onOpenReferences}>
+        <GroupsRoundedIcon />
       </HeaderButton>
       <HeaderButton label="Konfiguracja" onClick={onOpenConfig}>
         <TuneRoundedIcon />
