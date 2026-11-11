@@ -205,10 +205,12 @@ export const SelectedPreview: React.FC<SelectedPreviewProps> = ({
 }) => {
   const actionsDisabled = !(status === 'idle' || status === 'done' || status === 'error');
   const [imageLoaded, setImageLoaded] = React.useState(false);
+  const imgRef = React.useRef<HTMLImageElement | null>(null);
   const [showReveal, setShowReveal] = React.useState(true);
 
   React.useEffect(() => {
-    setImageLoaded(false);
+    // A cached image can finish before React attaches onLoad (seen on iOS), so check it directly
+    setImageLoaded(!!imgRef.current?.complete && (imgRef.current?.naturalWidth ?? 0) > 0);
     setShowReveal(true);
     const timer = setTimeout(() => setShowReveal(false), 1500);
     return () => clearTimeout(timer);
@@ -230,20 +232,28 @@ export const SelectedPreview: React.FC<SelectedPreviewProps> = ({
     >
       {item.imageUrl && (
         <Box sx={{ flex: 1, minWidth: 0, minHeight: 0, width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1.5 }}>
-          <Box sx={{ position: 'relative', display: 'inline-flex', maxWidth: '100%', maxHeight: '100%', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 14px 40px rgba(22, 50, 77, 0.18)', bgcolor: '#fff' }}>
+          {/* block wrapper + container-unit limits: Safari/iOS collapses a %-max-width image inside a shrink-to-fit flex box to 0 */}
+          <Box sx={{ position: 'relative', display: 'block', flex: 'none', lineHeight: 0, maxWidth: '100%', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 14px 40px rgba(22, 50, 77, 0.18)', bgcolor: '#fff' }}>
             <Box
               component="img"
               src={`${item.imageUrl}?t=${previewBustToken}`}
               alt={item.prompt}
               loading="eager"
               decoding="async"
+              ref={imgRef}
               onLoad={() => setImageLoaded(true)}
+              onError={() => setImageLoaded(true)}
               sx={{
                 display: 'block',
-                maxWidth: '100%',
-                // Fallback for browsers without container units, then the exact free height
+                width: 'auto',
+                height: 'auto',
+                // Fallback for browsers without container units, then the exact free space of <main>
+                maxWidth: isMobile ? 'calc(100vw - 16px)' : 'calc(100vw - 480px)',
                 maxHeight: isMobile ? 'calc(100dvh - 270px)' : 'calc(100dvh - 175px)',
-                '@supports (width: 1cqw)': { maxHeight: isMobile ? 'calc(100cqh - 150px)' : 'calc(100cqh - 72px)' },
+                '@supports (width: 1cqw)': {
+                  maxWidth: isMobile ? 'calc(100cqw - 16px)' : 'calc(100cqw - 120px)',
+                  maxHeight: isMobile ? 'calc(100cqh - 150px)' : 'calc(100cqh - 72px)',
+                },
                 objectFit: 'contain',
                 opacity: imageLoaded ? 1 : 0,
                 transform: imageLoaded ? 'scale(1)' : 'scale(0.96)',
