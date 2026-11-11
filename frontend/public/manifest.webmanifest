@@ -3,7 +3,7 @@
   "short_name": "Kolorowanki",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#8E7CFF",
+  "background_color": "#E3F2FF",
+  "theme_color": "#FFFFFF",
   "icons": []
 }

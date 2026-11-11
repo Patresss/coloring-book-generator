@@ -14,6 +14,7 @@ import { SelectedPreview } from './components/SelectedPreview';
 import { ProcessingDialog } from './components/ProcessingDialog';
 import { ConfigDialog } from './components/ConfigDialog';
 import { PromptDetailsDialog } from './components/PromptDetailsDialog';
+import { ConfirmDeleteDialog } from './components/ConfirmDeleteDialog';
 import { LoginOverlay } from './components/LoginOverlay';
 import { MissingEnvNotice } from './components/MissingEnvNotice';
 import { Status } from './types/status';
@@ -64,6 +65,7 @@ export const App: React.FC = () => {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [configOpen, setConfigOpen] = useState(false);
   const [promptInfoItem, setPromptInfoItem] = useState<HistoryItem | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<HistoryItem | null>(null);
   const [runtimeConfig, setRuntimeConfig] = useState<RuntimeConfig | null>(null);
   const [needLogin, setNeedLogin] = useState<boolean>(false);
   const [loginPw, setLoginPw] = useState<string>('');
@@ -251,7 +253,7 @@ export const App: React.FC = () => {
           await refreshHistory();
         } catch (e: any) {
           console.error(e);
-          setErrorText(e?.message || 'Wystąpił błąd podczas przetwarzania.');
+          setErrorText(extractErrorMessage(e, 'Wystąpił błąd podczas przetwarzania.'));
           setStatus('error');
         }
       };
@@ -407,7 +409,7 @@ export const App: React.FC = () => {
       await refreshHistory();
     } catch (e: any) {
       console.error('Idea generation failed', e);
-      setErrorText(e?.message || 'Wystąpił błąd podczas generowania.');
+      setErrorText(extractErrorMessage(e, 'Wystąpił błąd podczas generowania.'));
       setStatus('error');
     }
   };
@@ -506,7 +508,7 @@ export const App: React.FC = () => {
       await refreshHistory();
     } catch (e: any) {
       console.error('Retry failed', e);
-      setErrorText(e?.message || 'Wystąpił błąd podczas przetwarzania.');
+      setErrorText(extractErrorMessage(e, 'Wystąpił błąd podczas przetwarzania.'));
       setStatus('error');
       sfxError();
     }
@@ -569,14 +571,17 @@ export const App: React.FC = () => {
             selectedId={selected?.id}
             onSelect={(item) => item.imageUrl && setSelected(item)}
             onShowPrompt={setPromptInfoItem}
-            onDelete={handleDeleteHistoryItem}
+            onDelete={setPendingDelete}
           />
         )}
         <Box
           component="main"
           sx={{
             flex: 1,
+            minWidth: 0,
             position: 'relative',
+            containerType: 'size',
+            overflowY: 'auto',
             p: 2,
             display: 'flex',
             alignItems: 'center',
@@ -596,7 +601,7 @@ export const App: React.FC = () => {
               onClose={() => setSelected(null)}
               onRegenerate={() => handleRegenerateSelected(selected)}
               onPrint={() => handlePrintHistoryItem(selected)}
-              onDelete={() => handleDeleteHistoryItem(selected)}
+              onDelete={() => setPendingDelete(selected)}
             />
           ) : (
             <RecordingControls
@@ -647,9 +652,14 @@ export const App: React.FC = () => {
           onClose={() => setHistoryOpen(false)}
           onSelect={(item) => item.imageUrl && setSelected(item)}
           onShowPrompt={setPromptInfoItem}
-          onDelete={handleDeleteHistoryItem}
+          onDelete={setPendingDelete}
         />
       )}
+      <ConfirmDeleteDialog
+        item={pendingDelete}
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={(item) => { setPendingDelete(null); handleDeleteHistoryItem(item); }}
+      />
       <PromptDetailsDialog item={promptInfoItem} open={!!promptInfoItem} onClose={() => setPromptInfoItem(null)} />
     </Box>
   );

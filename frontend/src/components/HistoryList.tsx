@@ -1,16 +1,9 @@
 import React from 'react';
-import {
-  Box,
-  Divider,
-  IconButton,
-  List,
-  ListItem,
-  ListItemText,
-  Tooltip,
-} from '@mui/material';
+import { Box, ButtonBase, IconButton, Tooltip, Typography } from '@mui/material';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
-import DeleteIcon from '@mui/icons-material/Delete';
+import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded';
 import { HistoryItem } from '../api/client';
+import { sky } from '../theme';
 
 type HistoryListProps = {
   items: HistoryItem[];
@@ -18,8 +11,30 @@ type HistoryListProps = {
   onSelect: (item: HistoryItem) => void;
   onShowPrompt: (item: HistoryItem) => void;
   onDelete?: (item: HistoryItem) => void;
-  dense?: boolean;
+  // 1 = one big thumbnail per row (sidebar); otherwise as many as fit
+  columns?: 1 | 'auto';
 };
+
+const startOfDay = (date: Date) => new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+
+// "Dziś, 11:55" / "Wczoraj, 18:02" / "9 lis, 16:15"
+export const formatWhen = (timestamp: number): string => {
+  const date = new Date(timestamp);
+  if (Number.isNaN(date.getTime())) return '';
+  const time = date.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
+  const days = Math.round((startOfDay(new Date()) - startOfDay(date)) / 86_400_000);
+  if (days === 0) return `Dziś, ${time}`;
+  if (days === 1) return `Wczoraj, ${time}`;
+  return `${date.toLocaleDateString('pl-PL', { day: 'numeric', month: 'short' })}, ${time}`;
+};
+
+const smallAction = {
+  width: 28,
+  height: 28,
+  borderRadius: '9px',
+  color: sky.muted,
+  '& svg': { fontSize: 18 },
+} as const;
 
 export const HistoryList: React.FC<HistoryListProps> = ({
   items,
@@ -27,96 +42,105 @@ export const HistoryList: React.FC<HistoryListProps> = ({
   onSelect,
   onShowPrompt,
   onDelete,
-  dense = true,
-}) => (
-  <List dense={dense}>
-    {items.map((item) => (
-      <React.Fragment key={item.id}>
-        <ListItem
-          disableGutters
-          alignItems="flex-start"
-          onClick={() => item.imageUrl && onSelect(item)}
-          sx={{
-            cursor: item.imageUrl ? 'pointer' : 'default',
-            bgcolor: selectedId === item.id ? 'action.selected' : undefined,
-            px: 1,
-          }}
-        >
-          <ListItemText
-            primaryTypographyProps={{ variant: 'subtitle1' }}
-            secondaryTypographyProps={{ component: 'div' }}
-            primary={
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pr: 1, gap: 1 }}>
-                <span>{new Date(item.createdAt).toLocaleString()}</span>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                  {(item.prompt || item.improvedPrompt) && (
-                    <Tooltip title="Prompt" arrow>
-                      <IconButton
-                        edge="end"
-                        size="small"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onShowPrompt(item);
-                        }}
-                        sx={{ p: 0.25, bgcolor: 'common.white', color: 'info.main', '&:hover': { bgcolor: 'grey.100' } }}
-                        aria-label="Prompt"
-                      >
-                        <InfoOutlinedIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                  )}
-                  {onDelete && (
-                    <Tooltip title="Usuń kolorowankę">
-                      <IconButton
-                        edge="end"
-                        size="small"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onDelete(item);
-                        }}
-                        sx={{ p: 0.25, bgcolor: 'common.white', color: 'error.main', '&:hover': { bgcolor: 'grey.100' } }}
-                        aria-label="Usuń"
-                      >
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                  )}
-                </Box>
-              </Box>
-            }
-            secondary={
-              <>
-                {item.imageUrl && (
-                  <Box
-                    sx={{
-                      mt: 1,
-                      borderRadius: 2,
-                      border: 1,
-                      borderColor: 'divider',
-                      overflow: 'hidden',
-                      transition: 'transform .2s ease, box-shadow .2s ease',
-                      '&:hover': {
-                        transform: 'scale(1.02) rotate(-0.2deg)',
-                        boxShadow: '0 10px 24px rgba(0,0,0,0.10)',
-                      },
-                    }}
-                  >
-                    <Box
-                      component="img"
-                      src={item.imageUrl}
-                      alt="podgląd"
-                      loading="lazy"
-                      decoding="async"
-                      sx={{ width: '100%', height: 'auto', display: 'block' }}
-                    />
-                  </Box>
+  columns = 'auto',
+}) => {
+  const single = columns === 1;
+  if (items.length === 0) {
+    return (
+      <Typography sx={{ color: sky.muted, fontWeight: 700, textAlign: 'center', py: 5, px: 2 }}>
+        Tu pojawią się Twoje kolorowanki
+      </Typography>
+    );
+  }
+  return (
+    <Box
+      component="ul"
+      sx={{
+        listStyle: 'none',
+        m: 0,
+        p: 0,
+        display: 'grid',
+        gridTemplateColumns: single ? '1fr' : 'repeat(auto-fill, minmax(132px, 1fr))',
+        gap: single ? 1.5 : 1.25,
+      }}
+    >
+      {items.map((item) => {
+        const selected = selectedId === item.id;
+        return (
+          <Box
+            component="li"
+            key={item.id}
+            sx={{
+              bgcolor: 'background.paper',
+              border: `1.5px solid ${selected ? sky.blue : sky.line}`,
+              boxShadow: selected ? `0 0 0 3px ${sky.blueSoft}` : 'none',
+              borderRadius: '16px',
+              p: '6px',
+              minWidth: 0,
+              transition: 'border-color .15s ease, box-shadow .15s ease',
+            }}
+          >
+            <ButtonBase
+              onClick={() => item.imageUrl && onSelect(item)}
+              aria-label={item.prompt ? `Otwórz: ${item.prompt}` : 'Otwórz kolorowankę'}
+              sx={{
+                display: 'block',
+                width: '100%',
+                aspectRatio: single ? 'auto' : '3 / 4',
+                minHeight: single ? 120 : undefined,
+                borderRadius: '11px',
+                overflow: 'hidden',
+                bgcolor: '#fff',
+                transition: 'transform .15s ease',
+                '&:hover': { transform: 'scale(1.025)' },
+              }}
+            >
+              {item.imageUrl && (
+                <Box
+                  component="img"
+                  src={item.imageUrl}
+                  alt=""
+                  loading="lazy"
+                  decoding="async"
+                  sx={{ width: '100%', height: single ? 'auto' : '100%', maxHeight: single ? 520 : undefined, objectFit: 'contain', display: 'block' }}
+                />
+              )}
+            </ButtonBase>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pl: 0.5, pt: 0.25, minHeight: 30 }}>
+              <Typography
+                component="span"
+                sx={{ fontSize: 11.5, fontWeight: 700, color: sky.muted, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+              >
+                {formatWhen(item.createdAt)}
+              </Typography>
+              <Box sx={{ display: 'flex', flex: 'none' }}>
+                {(item.prompt || item.improvedPrompt) && (
+                  <Tooltip title="Szczegóły" arrow>
+                    <IconButton
+                      onClick={() => onShowPrompt(item)}
+                      aria-label="Szczegóły"
+                      sx={{ ...smallAction, '&:hover': { bgcolor: sky.blueSoft, color: sky.blue } }}
+                    >
+                      <InfoOutlinedIcon />
+                    </IconButton>
+                  </Tooltip>
                 )}
-              </>
-            }
-          />
-        </ListItem>
-        <Divider component="li" />
-      </React.Fragment>
-    ))}
-  </List>
-);
+                {onDelete && (
+                  <Tooltip title="Usuń" arrow>
+                    <IconButton
+                      onClick={() => onDelete(item)}
+                      aria-label="Usuń"
+                      sx={{ ...smallAction, '&:hover': { bgcolor: 'rgba(239, 68, 68, 0.12)', color: 'error.main' } }}
+                    >
+                      <DeleteOutlineRoundedIcon />
+                    </IconButton>
+                  </Tooltip>
+                )}
+              </Box>
+            </Box>
+          </Box>
+        );
+      })}
+    </Box>
+  );
+};

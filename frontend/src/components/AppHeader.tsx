@@ -2,19 +2,18 @@ import React from 'react';
 import {
   AppBar,
   Toolbar,
-  Typography,
   Tooltip,
   IconButton,
-  Switch,
   Box,
   ButtonBase,
 } from '@mui/material';
-import HistoryIcon from '@mui/icons-material/History';
-import BrushIcon from '@mui/icons-material/Brush';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
-import MusicNoteIcon from '@mui/icons-material/MusicNote';
-import VolumeOffIcon from '@mui/icons-material/VolumeOff';
+import HistoryRoundedIcon from '@mui/icons-material/HistoryRounded';
+import BrushRoundedIcon from '@mui/icons-material/BrushRounded';
+import TuneRoundedIcon from '@mui/icons-material/TuneRounded';
+import VolumeUpRoundedIcon from '@mui/icons-material/VolumeUpRounded';
+import VolumeOffRoundedIcon from '@mui/icons-material/VolumeOffRounded';
 import { keyframes } from '@mui/system';
+import { sky } from '../theme';
 
 type AppHeaderProps = {
   isMobile: boolean;
@@ -32,6 +31,33 @@ const wiggle = keyframes`
   100% { transform: rotate(0deg) translateY(0); }
 `;
 
+type HeaderButtonProps = {
+  label: string;
+  onClick: () => void;
+  pressed?: boolean;
+  children: React.ReactNode;
+};
+
+const HeaderButton: React.FC<HeaderButtonProps> = ({ label, onClick, pressed, children }) => (
+  <Tooltip title={label} arrow>
+    <IconButton
+      onClick={onClick}
+      aria-label={label}
+      aria-pressed={pressed}
+      sx={{
+        width: 44,
+        height: 44,
+        borderRadius: '14px',
+        bgcolor: sky.blueTint,
+        color: pressed === false ? sky.muted : sky.ink,
+        '&:hover': { bgcolor: sky.blueSoft },
+      }}
+    >
+      {children}
+    </IconButton>
+  </Tooltip>
+);
+
 export const AppHeader: React.FC<AppHeaderProps> = ({
   isMobile,
   sfxEnabled,
@@ -40,102 +66,55 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   onOpenConfig,
   onGoHome,
 }) => (
-  <AppBar position="fixed" color="primary" elevation={1}>
-    <Toolbar sx={{ px: { xs: 1, sm: 2 } }}>
+  <AppBar position="fixed" elevation={0}>
+    <Toolbar sx={{ px: { xs: 1.5, sm: 2.5 }, gap: 1 }}>
       {isMobile && (
-        <Tooltip title="Historia" arrow>
-          <IconButton
-            edge="start"
-            color="inherit"
-            onClick={onOpenHistory}
-            aria-label="Historia"
-            sx={{ mr: 1 }}
-          >
-            <HistoryIcon />
-          </IconButton>
-        </Tooltip>
+        <HeaderButton label="Twoje kolorowanki" onClick={onOpenHistory}>
+          <HistoryRoundedIcon />
+        </HeaderButton>
       )}
-      <Typography
-        variant="h6"
-        component="div"
+      <ButtonBase
+        onClick={onGoHome}
+        aria-label="Przejdź do strony głównej"
         sx={{
-          flexGrow: 1,
-          minWidth: 0,
-          lineHeight: { xs: 1.15, sm: 1.2 },
+          color: sky.ink,
+          fontFamily: 'inherit',
+          fontWeight: 800,
+          fontSize: { xs: '1.3rem', sm: '1.45rem' },
+          letterSpacing: '-0.2px',
+          borderRadius: 2,
+          px: 0.75,
+          py: 0.5,
           display: 'flex',
           alignItems: 'center',
-          justifyContent: { xs: 'center', sm: 'flex-start' },
+          gap: 1,
+          minWidth: 0,
         }}
       >
-        <ButtonBase
-          onClick={onGoHome}
-          aria-label="Przejdź do strony głównej"
+        <Box component="span" sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          Kolorowanki
+        </Box>
+        <BrushRoundedIcon
           sx={{
-            color: 'common.white',
-            fontWeight: 800,
-            textShadow: '0 1px 2px rgba(0,0,0,0.25)',
-            borderRadius: 1,
-            px: 0.5,
-            py: 0.25,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: { xs: 'center', sm: 'flex-start' },
-            gap: { xs: 0.5, sm: 1 },
-            fontSize: 'inherit',
-            minWidth: 0,
-            width: '100%',
+            fontSize: 24,
+            color: sky.blue,
+            animation: `${wiggle} 2.4s ease-in-out infinite`,
+            transformOrigin: 'bottom center',
+            '@media (prefers-reduced-motion: reduce)': { animation: 'none' },
           }}
-        >
-          <Box
-            component="span"
-            sx={{
-              fontSize: { xs: '1.25rem', sm: 'inherit' },
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            Kolorowanki
-          </Box>
-          <BrushIcon
-            sx={{
-              fontSize: 22,
-              animation: `${wiggle} 2.4s ease-in-out infinite`,
-              transformOrigin: 'bottom center',
-              color: 'inherit',
-            }}
-          />
-        </ButtonBase>
-      </Typography>
-      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-        <Tooltip title={sfxEnabled ? 'Dźwięki włączone' : 'Dźwięki wyłączone'} arrow>
-          <Box
-            sx={{ ml: { xs: 0.75, sm: 1.5 }, pt: 0, display: 'flex', flexDirection: 'column', alignItems: 'center' }}
-          >
-            {sfxEnabled ? (
-              <MusicNoteIcon fontSize="small" sx={{ color: 'common.white', mt: 1, mb: 0 }} />
-            ) : (
-              <VolumeOffIcon fontSize="small" sx={{ color: 'common.white', mt: 1, mb: 0 }} />
-            )}
-            <Switch
-              checked={sfxEnabled}
-              onChange={(e) => onToggleSfx(e.target.checked)}
-              color={sfxEnabled ? 'success' : 'default'}
-              inputProps={{ 'aria-label': 'Dźwięki' }}
-            />
-          </Box>
-        </Tooltip>
-        <Tooltip title="Konfiguracja" arrow>
-          <IconButton
-            size="small"
-            sx={{ ml: { xs: 0.75, sm: 1.5 }, color: 'common.white' }}
-            onClick={onOpenConfig}
-            aria-label="Konfiguracja"
-          >
-            <InfoOutlinedIcon fontSize="small" />
-          </IconButton>
-        </Tooltip>
-      </Box>
+        />
+      </ButtonBase>
+      <Box sx={{ flexGrow: 1 }} />
+      <HeaderButton
+        label={sfxEnabled ? 'Dźwięki włączone' : 'Dźwięki wyłączone'}
+        onClick={() => onToggleSfx(!sfxEnabled)}
+        pressed={sfxEnabled}
+      >
+        {sfxEnabled ? <VolumeUpRoundedIcon /> : <VolumeOffRoundedIcon />}
+      </HeaderButton>
+      <HeaderButton label="Konfiguracja" onClick={onOpenConfig}>
+        <TuneRoundedIcon />
+      </HeaderButton>
     </Toolbar>
   </AppBar>
 );

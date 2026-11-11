@@ -11,7 +11,7 @@ import {
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { HistoryItem } from '../api/client';
-import { stripExtension } from '../utils/strings';
+import { PeopleChips } from './PeopleChips';
 
 type PromptDetailsDialogProps = {
   item: HistoryItem | null;
@@ -48,11 +48,9 @@ export const PromptDetailsDialog: React.FC<PromptDetailsDialogProps> = ({ item, 
           {item.references && item.references.length > 0 && (
             <Box>
               <Typography variant="subtitle2" gutterBottom>
-                Referencje
+                Osoby na rysunku
               </Typography>
-              <Box sx={{ p: 1, bgcolor: 'action.hover', borderRadius: 1, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-                {item.references.map(stripExtension).join(', ')}
-              </Box>
+              <PeopleChips references={item.references} size="small" justify="flex-start" />
             </Box>
           )}
           {item.generationTimeMs !== undefined && (

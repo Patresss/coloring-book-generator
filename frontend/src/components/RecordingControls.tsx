@@ -1,21 +1,18 @@
 import React from 'react';
-import {
-  Box,
-  Stack,
-  Tooltip,
-  Switch,
-  Fab,
-  Button,
-} from '@mui/material';
-import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
-import CloseIcon from '@mui/icons-material/Close';
-import CropLandscapeIcon from '@mui/icons-material/CropLandscape';
-import CropPortraitIcon from '@mui/icons-material/CropPortrait';
-import MicIcon from '@mui/icons-material/Mic';
-import PrintIcon from '@mui/icons-material/Print';
-import BrushIcon from '@mui/icons-material/Brush';
+import { Box, Button, ButtonBase, InputBase, Stack, Tooltip, Typography } from '@mui/material';
+import AutoAwesomeRoundedIcon from '@mui/icons-material/AutoAwesomeRounded';
+import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded';
+import CasinoRoundedIcon from '@mui/icons-material/CasinoRounded';
+import CheckRoundedIcon from '@mui/icons-material/CheckRounded';
+import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
+import CropPortraitRoundedIcon from '@mui/icons-material/CropPortraitRounded';
+import EditRoundedIcon from '@mui/icons-material/EditRounded';
+import MicRoundedIcon from '@mui/icons-material/MicRounded';
+import PrintRoundedIcon from '@mui/icons-material/PrintRounded';
 import { keyframes } from '@mui/system';
 import { Status } from '../types/status';
+import { sky } from '../theme';
+import { buildIdeaSet } from './ideaCatalog';
 
 type RecordingControlsProps = {
   status: Status;
@@ -34,122 +31,74 @@ type RecordingControlsProps = {
   onIdeaSelect: (prompt: string) => void;
 };
 
-const ideaCatalog = [
-  { icon: '🌈', label: 'Tęcze', prompt: 'Tęcze z 7 paskami na kazdy kolor' },
-  { icon: '🦄', label: 'Jednorożce', prompt: 'Jednorożce w magicznym lesie' },
-  { icon: '🦁', label: 'Zwierzęta w zoo', prompt: 'Lew, żyrafa i słoń w zoo' },
-  { icon: '🐶', label: 'Pieski', prompt: 'Pieski bawiące się piłką' },
-  { icon: '🐱', label: 'Kotki', prompt: 'Kotki śpiące na poduszkach' },
-  { icon: '👗', label: 'Lalki', prompt: 'Lalki w stylu Barbie w modnych strojach i z długimi włosami' },
-  { icon: '🚗', label: 'Samochody', prompt: 'Samochody wyścigowe na torze' },
-  { icon: '🚀', label: 'Rakiety', prompt: 'Rakiety lecące w kosmos, planety i gwiazdy' },
-  { icon: '🦸‍♀️', label: 'Superbohaterowie', prompt: 'Superbohaterowie w akcji w dynamicznych pozach' },
-  { icon: '🧚‍♀️', label: 'Wróżki', prompt: 'Bajkowe wróżki z różdżkami' },
-  { icon: '🐯', label: 'Tygryski', prompt: 'Przyjazne tygryski w dżungli' },
-  { icon: '🦓', label: 'Zebry', prompt: 'Zebra na sawannie' },
-  { icon: '🦒', label: 'Żyrafy', prompt: 'Żyrafa pod drzewem akacji' },
-  { icon: '🐘', label: 'Słonie', prompt: 'Słoń z trąbą unoszącą wodę' },
-  { icon: '🐵', label: 'Małpki', prompt: 'Wesołe małpki na lianach' },
-  { icon: '🐸', label: 'Żabki', prompt: 'Żabka na liściu nenufaru' },
-  { icon: '🐢', label: 'Żółwie', prompt: 'Żółw na plaży' },
-  { icon: '🐳', label: 'Ocean', prompt: 'Podwodny świat z wielorybem i rybkami' },
-  { icon: '🦕', label: 'Dinozaury', prompt: 'Przyjazne dinozaury w parku' },
-  { icon: '🏰', label: 'Zamki', prompt: 'Bajkowy zamek na wzgórzu' },
-  { icon: '👸', label: 'Księżniczki', prompt: 'Księżniczka w sukni balowej' },
-  { icon: '🤴', label: 'Książęta', prompt: 'Książę z mieczem, uśmiechnięty' },
-  { icon: '🪖', label: 'Żołnierzyki', prompt: 'Zabawkowe żołnierzyki na paradzie z flagami' },
-  { icon: '🐉', label: 'Smoki', prompt: 'Przyjazny smok nad wioską' },
-  { icon: '🧜‍♀️', label: 'Syrenki', prompt: 'Syrenka w morzu, muszelki i rybki' },
-  { icon: '🦋', label: 'Motyle', prompt: 'Motyle nad łąką' },
-  { icon: '🌸', label: 'Kwiaty', prompt: 'Różne kwiaty w ogrodzie' },
-  { icon: '🌵', label: 'Pustynia', prompt: 'Kaktusy i zachód słońca' },
-  { icon: '🌲', label: 'Las', prompt: 'Leśne zwierzątka i drzewa' },
-  { icon: '🏖️', label: 'Plaża', prompt: 'Plaża z zamkiem z piasku, wiaderkiem i łopatką' },
-  { icon: '🏜️', label: 'Kaniony', prompt: 'Skaliste kaniony i słońce' },
-  { icon: '🏞️', label: 'Góry', prompt: 'Góry, rzeka i sosny' },
-  { icon: '🚌', label: 'Autobus', prompt: 'Wesoły szkolny autobus' },
-  { icon: '🚒', label: 'Straż', prompt: 'Wóz strażacki w akcji (bez ognia)' },
-  { icon: '🚑', label: 'Karetka', prompt: 'Karetka z uśmiechniętym kierowcą' },
-  { icon: '✈️', label: 'Samoloty', prompt: 'Samolot nad chmurami' },
-  { icon: '🚂', label: 'Pociągi', prompt: 'Lokomotywa na torach' },
-  { icon: '🚲', label: 'Rowerki', prompt: 'Dziecięcy rowerek w parku' },
-  { icon: '🛵', label: 'Skutery', prompt: 'Skuter w mieście' },
-  { icon: '🧩', label: 'Kształty', prompt: 'Duże proste kształty geometryczne' },
-  { icon: '🎈', label: 'Balony', prompt: 'Mnóstwo balonów nad miasteczkiem' },
-  { icon: '🎠', label: 'Karuzela', prompt: 'Karuzela z konikami' },
-  { icon: '🎪', label: 'Cyrk', prompt: 'Cyrkowy namiot i przyjazny klaun' },
-  { icon: '🎃', label: 'Dynia', prompt: 'Uśmiechnięte dynie i jesienne liście' },
-  { icon: '❄️', label: 'Zima', prompt: 'Bałwan i śnieżynki' },
-  { icon: '🌞', label: 'Lato', prompt: 'Słońce, plaża i lody' },
-  { icon: '🌧️', label: 'Deszcz', prompt: 'Parasolka i kałuże' },
-  { icon: '🪐', label: 'Planety', prompt: 'Układ słoneczny: planety i gwiazdy' },
-  { icon: '🧁', label: 'Słodkości', prompt: 'Babeczki i cukierki' },
-  { icon: '🍕', label: 'Pizza', prompt: 'Wesoła pizza z uśmiechem' },
-  { icon: '🍦', label: 'Lody', prompt: 'Pucharek lodów z posypką' },
-  { icon: '🏀', label: 'Sport', prompt: 'Piłki sportowe: koszykówka i piłka nożna' },
-  { icon: '🎸', label: 'Muzyka', prompt: 'Instrumenty muzyczne' },
-  { icon: '🧱', label: 'Klocki', prompt: 'Wieża z klocków' },
-] as const;
+const ORBIT_SECONDS = 120;
 
-const ORBIT_SPEED = 0.2;
+const orbit = keyframes`
+  to { transform: rotate(360deg); }
+`;
+const orbitBack = keyframes`
+  to { transform: rotate(-360deg); }
+`;
+const breathe = keyframes`
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.035); }
+`;
+const ripple = keyframes`
+  0% { transform: scale(1); opacity: 0.55; }
+  100% { transform: scale(1.55); opacity: 0; }
+`;
+const wave = keyframes`
+  0%, 100% { transform: scaleY(0.35); }
+  50% { transform: scaleY(1); }
+`;
+const popIn = keyframes`
+  from { scale: 0.6; }
+  to { scale: 1; }
+`;
+const noMotion = { '@media (prefers-reduced-motion: reduce)': { animation: 'none' } };
 
-const buildIdeaSet = () => {
-  const shuffled = [...ideaCatalog].sort(() => Math.random() - 0.5);
-  return shuffled.slice(0, 10);
+type ToggleChipProps = {
+  label: string;
+  hint: string;
+  active?: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
 };
 
-const pulse = keyframes`
-  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239,71,111, 0.4); }
-  70% { transform: scale(1.04); box-shadow: 0 0 0 18px rgba(239,71,111, 0); }
-  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239,71,111, 0); }
-`;
-
-const recordPulse = keyframes`
-  0% { box-shadow: 0 0 0 0 rgba(239,71,111, 0.55); transform: scale(1); }
-  60% { box-shadow: 0 0 0 12px rgba(239,71,111, 0); transform: scale(1.03); }
-  100% { box-shadow: 0 0 0 0 rgba(239,71,111, 0); transform: scale(1); }
-`;
-
-const recordPulseSuccess = keyframes`
-  0% { box-shadow: 0 0 0 0 rgba(16,185,129, 0.55); transform: scale(1); }
-  60% { box-shadow: 0 0 0 12px rgba(16,185,129, 0); transform: scale(1.03); }
-  100% { box-shadow: 0 0 0 0 rgba(16,185,129, 0); transform: scale(1); }
-`;
-
-const wave = keyframes`
-  0% { transform: scaleY(0.4); }
-  50% { transform: scaleY(1); }
-  100% { transform: scaleY(0.4); }
-`;
-
-const wiggle = keyframes`
-  0% { transform: rotate(0deg) translateY(0); }
-  30% { transform: rotate(-8deg) translateY(1px); }
-  60% { transform: rotate(6deg) translateY(-1px); }
-  100% { transform: rotate(0deg) translateY(0); }
-`;
-
-const particleOut = keyframes`
-  0% {
-    opacity: 0;
-    transform: translate(-50%, -50%) scale(0.5);
-  }
-  20% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 0;
-    transform: translate(var(--tx), var(--ty)) scale(0.3);
-  }
-`;
-
-const WAVEFORM_GAP = 0.6;
-
-type RingGeometry = { radius: number; item: number; emoji: number };
+// Icon + caption toggle; easier to hit and to understand than a bare switch
+const ToggleChip: React.FC<ToggleChipProps> = ({ label, hint, active, onClick, children }) => (
+  <Tooltip title={hint} arrow>
+    <ButtonBase
+      onClick={onClick}
+      aria-pressed={active}
+      aria-label={hint}
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '3px',
+        minWidth: { xs: 62, sm: 70 },
+        px: 1,
+        py: '7px',
+        borderRadius: '16px',
+        fontFamily: 'inherit',
+        fontSize: 11.5,
+        fontWeight: 800,
+        lineHeight: 1.2,
+        color: active === undefined ? sky.ink : active ? sky.blue : sky.muted,
+        bgcolor: active ? sky.blueSoft : 'transparent',
+        transition: 'background-color .15s ease, color .15s ease',
+        '&:hover': { bgcolor: active ? sky.blueSoft : sky.blueTint },
+        '& svg': { fontSize: 24, transition: 'transform .25s ease' },
+      }}
+    >
+      {children}
+      <span>{label}</span>
+    </ButtonBase>
+  </Tooltip>
+);
 
 export const RecordingControls: React.FC<RecordingControlsProps> = ({
   status,
-  isMobile,
   canRecord,
   autoPrint,
   improveEnabled,
@@ -163,501 +112,291 @@ export const RecordingControls: React.FC<RecordingControlsProps> = ({
   onCancelRecording,
   onIdeaSelect,
 }) => {
-  const [ring, setRing] = React.useState<RingGeometry>(() => ({
-    radius: isMobile ? 150 : 200,
-    item: isMobile ? 72 : 88,
-    emoji: isMobile ? 30 : 34,
-  }));
-  const barWidth = isMobile ? 4 : 6;
-  const waveformWidth = barWidth * 12 + WAVEFORM_GAP * 8 * 11;
-  const waveformWidthPx = `${waveformWidth}px`;
+  const [ideas, setIdeas] = React.useState(() => buildIdeaSet());
+  const [ideasKey, setIdeasKey] = React.useState(0);
+  const [text, setText] = React.useState('');
+  const recording = status === 'recording';
+  const micDisabled = !recording && !canRecord;
+  const showIdeas = ideasVisible && status === 'idle';
 
-  React.useEffect(() => {
-    const recalc = () => {
-      if (typeof window === 'undefined') return;
-      const minDim = Math.min(window.innerWidth, window.innerHeight);
-      const baseR = isMobile ? 150 : 200;
-      const item = minDim < 360 ? (isMobile ? 56 : 72) : (isMobile ? 72 : 88);
-      const padding = 16;
-      const maxR = Math.floor(minDim / 2) - Math.floor(item / 2) - padding;
-      const radius = Math.max(80, Math.min(baseR, maxR));
-      const emoji = item <= 56 ? (isMobile ? 22 : 26) : (isMobile ? 30 : 34);
-      setRing({ radius, item, emoji });
-    };
-    recalc();
-    window.addEventListener('resize', recalc);
-    return () => window.removeEventListener('resize', recalc);
-  }, [isMobile]);
+  const refreshIdeas = () => {
+    setIdeas(buildIdeaSet());
+    setIdeasKey((key) => key + 1);
+  };
 
-  const ringClearance = Math.max(140, ring.radius + ring.item);
-  const ringPadding = isMobile ? 0 : 80;
-  const ringBoxSize = ring.radius * 2 + ring.item + ringPadding;
-  const ringBoxSizePx = `${ringBoxSize}px`;
-  const [ideas, setIdeas] = React.useState(buildIdeaSet);
-  const refreshIdeas = React.useCallback(() => setIdeas(buildIdeaSet()), []);
-  const [orbitAngle, setOrbitAngle] = React.useState(0);
-  const orbitFrameRef = React.useRef<number | null>(null);
-  const orbitLastTimestampRef = React.useRef<number | null>(null);
-  const [orbitPaused, setOrbitPaused] = React.useState(false);
-  const [hoveredIdeaIndex, setHoveredIdeaIndex] = React.useState<number | null>(null);
+  const submitText = (event: React.FormEvent) => {
+    event.preventDefault();
+    const value = text.trim();
+    if (!value || !canRecord) return;
+    setText('');
+    onIdeaSelect(value);
+  };
 
-  React.useEffect(() => {
-    const cleanup = () => {
-      if (orbitFrameRef.current != null) {
-        cancelAnimationFrame(orbitFrameRef.current);
-        orbitFrameRef.current = null;
-      }
-      orbitLastTimestampRef.current = null;
-    };
+  const statusText = recording
+    ? 'Słucham… naciśnij, gdy skończysz'
+    : canRecord
+      ? 'Naciśnij i powiedz, co narysować'
+      : 'Chwileczkę…';
 
-    if (orbitPaused) {
-      cleanup();
-      return cleanup;
-    }
-
-    const step = (time: number) => {
-      if (orbitLastTimestampRef.current != null) {
-        const delta = time - orbitLastTimestampRef.current;
-        setOrbitAngle((prev) => (prev + (delta / 1000) * ORBIT_SPEED) % (Math.PI * 2));
-      }
-      orbitLastTimestampRef.current = time;
-      orbitFrameRef.current = requestAnimationFrame(step);
-    };
-
-    orbitFrameRef.current = requestAnimationFrame(step);
-    return cleanup;
-  }, [orbitPaused]);
-
-  const handleIdeaMouseEnter = () => setOrbitPaused(true);
-  const handleIdeaMouseLeave = () => setOrbitPaused(false);
-  const fabDisabled = status !== 'recording' && !canRecord;
+  const micColors = recording
+    ? { from: '#4ADE80', to: sky.green, glow: 'rgba(34, 165, 101, 0.40)' }
+    : { from: sky.coralLight, to: sky.coral, glow: 'rgba(244, 63, 94, 0.38)' };
 
   return (
-    <Stack spacing={2} alignItems="center" sx={{ width: '100%', maxWidth: { xs: 420, sm: 640 }, mx: 'auto' }}>
-      {status !== 'recording' && (
-        <Stack spacing={0} sx={{ width: '100%', maxWidth: '100%' }}>
-          <Box
-            sx={{
-              display: 'flex',
-              flexWrap: 'wrap',
-              justifyContent: 'center',
-              alignItems: 'center',
-              gap: { xs: 1, sm: 1.5 },
-              bgcolor: (theme) => theme.palette.background.paper,
-              opacity: 0.95,
-              borderRadius: 3,
-              px: { xs: 1, sm: 1.5 },
-              py: { xs: 0.75, sm: 1 },
-              boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-              width: 'fit-content',
-              maxWidth: '100%',
-              mx: 'auto',
-              position: 'relative',
-              zIndex: 2,
-              backdropFilter: 'blur(8px)',
-              border: '1px solid',
-              borderColor: 'divider',
-              transition: 'all 0.3s ease',
-              '&:hover': {
-                boxShadow: '0 6px 16px rgba(0,0,0,0.15)',
-                opacity: 1,
-              },
-            }}
-          >
-            <Tooltip title={landscapeMode ? 'Orientacja pozioma' : 'Orientacja pionowa'} arrow>
-              <Box
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 0.5,
-                  transition: 'transform 0.2s ease',
-                  '&:hover': { transform: 'scale(1.05)' },
-                }}
-              >
-                {landscapeMode ? (
-                  <CropLandscapeIcon
-                    color="primary"
-                    sx={{
-                      transition: 'all 0.3s ease',
-                      animation: landscapeMode ? 'icon-pop 0.4s ease' : 'none',
-                      '@keyframes icon-pop': {
-                        '0%, 100%': { transform: 'scale(1)' },
-                        '50%': { transform: 'scale(1.2)' },
-                      },
-                    }}
-                  />
-                ) : (
-                  <CropPortraitIcon color="action" sx={{ transition: 'all 0.3s ease' }} />
-                )}
-                <Switch
-                  size="small"
-                  checked={landscapeMode}
-                  onChange={(e) => onLandscapeChange(e.target.checked)}
-                  color="primary"
-                  inputProps={{ 'aria-label': 'Orientacja pozioma' }}
-                />
-              </Box>
-            </Tooltip>
-            <Tooltip title={autoPrint ? 'Automatyczne drukowanie włączone' : 'Kolorowanki nie będą drukowane automatycznie'} arrow>
-              <Box
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 0.5,
-                  transition: 'transform 0.2s ease',
-                  '&:hover': { transform: 'scale(1.05)' },
-                }}
-              >
-                <PrintIcon
-                  color={autoPrint ? 'primary' : 'action'}
-                  sx={{
-                    transition: 'all 0.3s ease',
-                    animation: autoPrint ? 'icon-pop 0.4s ease' : 'none',
-                    '@keyframes icon-pop': {
-                      '0%, 100%': { transform: 'scale(1)' },
-                      '50%': { transform: 'scale(1.2)' },
-                    },
-                  }}
-                />
-                <Switch
-                  size="small"
-                  checked={autoPrint}
-                  onChange={(e) => onAutoPrintChange(e.target.checked)}
-                  color="primary"
-                  inputProps={{ 'aria-label': 'Automatyczne drukowanie' }}
-                />
-              </Box>
-            </Tooltip>
-            <Tooltip title={improveEnabled ? 'Ulepszanie promptu włączone' : 'Wysyłaj oryginalny prompt'} arrow>
-              <Box
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 0.5,
-                  transition: 'transform 0.2s ease',
-                  '&:hover': { transform: 'scale(1.05)' },
-                }}
-              >
-                <AutoAwesomeIcon
-                  color={improveEnabled ? 'primary' : 'action'}
-                  sx={{
-                    transition: 'all 0.3s ease',
-                    animation: improveEnabled ? 'icon-pop 0.4s ease' : 'none',
-                    '@keyframes icon-pop': {
-                      '0%, 100%': { transform: 'scale(1)' },
-                      '50%': { transform: 'scale(1.2)' },
-                    },
-                  }}
-                />
-                <Switch
-                  size="small"
-                  checked={improveEnabled}
-                  onChange={(e) => onImproveChange(e.target.checked)}
-                  color="primary"
-                  inputProps={{ 'aria-label': 'Ulepszanie promptu' }}
-                />
-              </Box>
-            </Tooltip>
-          </Box>
-          <Box
-            sx={{
-              mt: '16px',
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              bgcolor: (theme) => theme.palette.background.paper,
-              opacity: 0.8,
-              borderRadius: 3,
-              px: { xs: 0.75, sm: 1 },
-              py: { xs: 0.5, sm: 0.75 },
-              boxShadow: 4,
-              width: 'fit-content',
-              mx: 'auto',
-              position: 'relative',
-              zIndex: 2,
-              height: { xs: 40, sm: 40 },
-            }}
-          >
-            <Tooltip title="Odśwież sugestie" arrow>
-              <Button
-                variant="contained"
-                onClick={refreshIdeas}
-                aria-label="Generuj nowe sugestie"
-                sx={{
-                  minWidth: 0,
-                  width: 100,
-                  height: { xs: 32, sm: 36 },
-                  borderRadius: 3,
-                  fontSize: { xs: 18, sm: 22 },
-                  padding: 0,
-                  bgcolor: 'common.white',
-                  color: 'text.primary',
-                  boxShadow: 'none',
-                  '&:hover': {
-                    bgcolor: 'grey.100',
-                    boxShadow: 'none',
-                  },
-                }}
-              >
-                🎲
-              </Button>
-            </Tooltip>
-          </Box>
-        </Stack>
-      )}
+    <Stack
+      alignItems="center"
+      sx={{
+        // Ring diameter follows the free space of the main area (container units when available)
+        '--D': 'max(190px, min(460px, 86vw, calc(100dvh - 330px)))',
+        '@supports (width: 1cqw)': {
+          '--D': 'max(190px, min(460px, 90cqw, calc(100cqh - 235px)))',
+        },
+        '--M': 'calc(var(--D) * 0.4)',
+        width: '100%',
+        gap: { xs: 1.25, sm: 2 },
+        position: 'relative',
+        zIndex: 1,
+      }}
+    >
       <Box
         sx={{
-          position: 'relative',
-          width: ringBoxSizePx,
-          height: ringBoxSizePx,
-          maxWidth: '100%',
-          maxHeight: '70vh',
           display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          mt: ringClearance,
+          alignItems: 'stretch',
+          gap: 0.5,
+          p: '6px',
+          borderRadius: '22px',
+          bgcolor: 'background.paper',
+          border: `1px solid ${sky.line}`,
+          boxShadow: sky.softShadow,
+          visibility: recording ? 'hidden' : 'visible',
         }}
       >
-        <Box sx={{ position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
-          {/* Outer glow ring */}
-          {canRecord && status !== 'recording' && (
-            <Box
-              sx={{
-                position: 'absolute',
-                width: { xs: 110, sm: 190 },
-                height: { xs: 110, sm: 190 },
-                borderRadius: '50%',
-                border: '3px solid',
-                borderColor: 'error.main',
-                opacity: 0.3,
-                animation: `${pulse} 1.8s ease-in-out infinite`,
-              }}
-            />
-          )}
-          <Fab
-            aria-label={status === 'recording' ? 'Generuj kolorowanke' : 'Nagraj prompt glosowy'}
-            color={status === 'recording' ? 'success' : 'error'}
-            size="large"
+        <ToggleChip
+          label={landscapeMode ? 'Poziomo' : 'Pionowo'}
+          hint={landscapeMode ? 'Kartka pozioma – naciśnij, aby zmienić na pionową' : 'Kartka pionowa – naciśnij, aby zmienić na poziomą'}
+          active={landscapeMode}
+          onClick={() => onLandscapeChange(!landscapeMode)}
+        >
+          <CropPortraitRoundedIcon sx={{ transform: landscapeMode ? 'rotate(90deg)' : 'none' }} />
+        </ToggleChip>
+        <ToggleChip
+          label="Drukuj"
+          hint={autoPrint ? 'Drukowanie od razu – włączone' : 'Drukowanie od razu – wyłączone'}
+          active={autoPrint}
+          onClick={() => onAutoPrintChange(!autoPrint)}
+        >
+          <PrintRoundedIcon />
+        </ToggleChip>
+        <ToggleChip
+          label="Ulepszaj"
+          hint={improveEnabled ? 'AI dopisuje szczegóły do pomysłu – włączone' : 'AI dopisuje szczegóły do pomysłu – wyłączone'}
+          active={improveEnabled}
+          onClick={() => onImproveChange(!improveEnabled)}
+        >
+          <AutoAwesomeRoundedIcon />
+        </ToggleChip>
+        <Box sx={{ width: '1px', bgcolor: sky.line, my: 1, mx: 0.25 }} />
+        <ToggleChip label="Losuj" hint="Pokaż inne pomysły" onClick={refreshIdeas}>
+          <CasinoRoundedIcon sx={{ '.MuiButtonBase-root:active &': { transform: 'rotate(180deg)' } }} />
+        </ToggleChip>
+      </Box>
+
+      <Box sx={{ position: 'relative', width: 'var(--D)', height: 'var(--D)', flex: 'none' }}>
+        {showIdeas && (
+          <Box
+            key={ideasKey}
             sx={{
-              width: { xs: 96, sm: 168 },
-              height: { xs: 96, sm: 168 },
-              position: 'relative',
-              animation:
-                status === 'recording'
-                  ? `${recordPulseSuccess} 1.4s ease-in-out infinite`
-                  : canRecord
-                    ? `${pulse} 1.8s ease-in-out infinite`
-                    : 'none',
-              transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
-              '&.Mui-disabled': {
-                bgcolor: status === 'recording' ? 'success.main' : 'error.main',
-                color: 'common.white',
-                opacity: 1,
-              },
-              '& svg': {
-                fontSize: { xs: 36, sm: 56 },
-                transition: 'transform 0.3s ease',
-              },
-              '&:hover': {
-                bgcolor: status === 'recording' ? 'success.dark' : 'error.dark',
-                transform: 'scale(1.05)',
-                '& svg': {
-                  transform: 'scale(1.1)',
-                },
-              },
-              '&:active': {
-                transform: 'scale(0.98)',
-              },
-              '&:not(.Mui-disabled)': {
-                cursor: 'pointer',
-              },
-              '&::before': {
-                content: '""',
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                borderRadius: '50%',
-                background: 'radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 70%)',
-                pointerEvents: 'none',
-              },
+              position: 'absolute',
+              inset: 0,
+              animation: `${orbit} ${ORBIT_SECONDS}s linear infinite`,
+              // Stop the carousel while a child is hovered or focused so it is easy to hit
+              '&:hover, &:focus-within': { animationPlayState: 'paused' },
+              '&:hover .idea-upright, &:focus-within .idea-upright': { animationPlayState: 'paused' },
+              ...noMotion,
+              '@media (prefers-reduced-motion: reduce)': { animation: 'none', '& .idea-upright': { animation: 'none' } },
             }}
-            disabled={fabDisabled}
-            onClick={status === 'recording' ? onStopRecording : canRecord ? onStartRecording : undefined}
           >
-            {status === 'recording' ? <AutoAwesomeIcon sx={{ color: 'common.white' }} /> : <MicIcon />}
-          </Fab>
-          {status === 'recording' && (
-            <Stack
-              direction="column"
-              spacing={0.5}
-              alignItems="center"
-              sx={{
-                position: 'absolute',
-                top: 'calc(100% + 10px)',
-                left: '50%',
-                transform: 'translateX(-50%)',
-              }}
-            >
-              <Box
-                aria-label="Nagrywanie – wizualizacja dźwięku"
-                sx={{
-                  display: 'flex',
-                  alignItems: 'flex-end',
-                  gap: WAVEFORM_GAP,
-                  height: 32,
-                  width: waveformWidthPx,
-                  justifyContent: 'space-between',
-                  position: 'relative',
-                }}
-              >
-                {Array.from({ length: 12 }).map((_, i) => (
-                  <Box
-                    // eslint-disable-next-line react/no-array-index-key
-                    key={i}
-                    sx={{
-                      width: { xs: 4, sm: 6 },
-                      height: '100%',
-                      transformOrigin: 'center bottom',
-                      background: `linear-gradient(to top, #EF476F 0%, #FB5607 50%, #FFB703 100%)`,
-                      borderRadius: 1,
-                      animation: `${wave} ${1.1 + (i % 5) * 0.12}s ease-in-out ${i * 0.08}s infinite`,
-                      boxShadow: '0 2px 12px rgba(239,71,111,0.5), 0 0 20px rgba(251,86,7,0.3)',
-                      transition: 'box-shadow 0.3s ease',
-                      position: 'relative',
-                      '&::after': {
-                        content: '""',
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        background: 'linear-gradient(to top, rgba(255,255,255,0) 0%, rgba(255,255,255,0.3) 100%)',
-                        borderRadius: 1,
-                        pointerEvents: 'none',
-                      },
-                    }}
-                  />
-                ))}
-              </Box>
-              <Button
-                variant="contained"
-                color="error"
-                startIcon={<CloseIcon />}
-                onClick={onCancelRecording}
-                sx={{ width: waveformWidthPx, borderRadius: 3 }}
-              >
-                Anuluj
-              </Button>
-            </Stack>
-          )}
-        </Box>
-        {ideasVisible && status === 'idle' && (
-          <>
-            {ideas.map((it, index) => {
-              const angle = (index / ideas.length) * Math.PI * 2 + orbitAngle;
-              const x = Math.cos(angle) * ring.radius;
-              const y = Math.sin(angle) * ring.radius;
-              const isHovered = hoveredIdeaIndex === index;
-
+            {ideas.map((idea, index) => {
+              const angle = (index / ideas.length) * 360 - 90;
               return (
-                <Tooltip title={it.label} arrow key={`${it.icon}-${index}`}>
+                <Box
+                  key={`${idea.icon}-${index}`}
+                  sx={{
+                    position: 'absolute',
+                    left: '50%',
+                    top: '50%',
+                    width: 'calc(var(--D) * 0.19)',
+                    height: 'calc(var(--D) * 0.19)',
+                    margin: 'calc(var(--D) * -0.095)',
+                    transform: `rotate(${angle}deg) translateX(calc(var(--D) * 0.405)) rotate(${-angle}deg)`,
+                  }}
+                >
                   <Box
-                    onClick={() => {
-                      const prompt = it.prompt;
-                      onIdeaSelect(prompt);
-                    }}
-                    onMouseEnter={() => {
-                      handleIdeaMouseEnter();
-                      setHoveredIdeaIndex(index);
-                    }}
-                    onMouseLeave={() => {
-                      handleIdeaMouseLeave();
-                      setHoveredIdeaIndex(null);
-                    }}
-                    role="button"
-                    aria-label={`Pomysł: ${it.label}`}
-                    sx={{
-                      position: 'absolute',
-                      left: `calc(50% + ${x}px)`,
-                      top: `calc(50% + ${y}px)`,
-                      transform: 'translate(-50%, -50%)',
-                      width: ring.item,
-                      height: ring.item,
-                      borderRadius: '50%',
-                      bgcolor: '#FFB703',
-                      color: 'primary.contrastText',
-                      opacity: 0.7,
-                      boxShadow: 2,
-                      display: 'grid',
-                      placeItems: 'center',
-                      cursor: 'pointer',
-                      userSelect: 'none',
-                      transition: 'transform .12s ease, box-shadow .2s ease, opacity .12s ease',
-                      '&:hover': {
-                        transform: 'translate(-50%, -50%) scale(1.06)',
-                        boxShadow: 4,
-                        opacity: 1,
-                      },
-                      '&:active': { transform: 'translate(-50%, -50%) scale(0.96)' },
-                    }}
+                    className="idea-upright"
+                    sx={{ width: '100%', height: '100%', animation: `${orbitBack} ${ORBIT_SECONDS}s linear infinite` }}
                   >
-                    {/* Radial particles flying out from center */}
-                    {isHovered && (
-                      <>
-                        {[...Array(8)].map((_, i) => {
-                          const angle = (i / 8) * Math.PI * 2;
-                          const distance = 45;
-                          const tx = Math.cos(angle) * distance;
-                          const ty = Math.sin(angle) * distance;
-
-                          return (
-                            <Box
-                              key={i}
-                              sx={{
-                                position: 'absolute',
-                                width: 8,
-                                height: 8,
-                                borderRadius: '50%',
-                                bgcolor: '#FFF',
-                                top: '50%',
-                                left: '50%',
-                                '--tx': `${tx}px`,
-                                '--ty': `${ty}px`,
-                                animation: `${particleOut} 1.2s ease-out infinite`,
-                                animationDelay: `${i * 0.12}s`,
-                                pointerEvents: 'none',
-                              }}
-                            />
-                          );
-                        })}
-                      </>
-                    )}
-                    <Box
-                      sx={{
-                        fontSize: ring.emoji,
-                        lineHeight: 1,
-                        transition: 'transform 0.2s ease',
-                        transform: isHovered ? 'scale(1.15)' : 'scale(1)',
-                      }}
-                      component="span"
-                    >
-                      {it.icon}
-                    </Box>
+                    <Tooltip title={idea.label} arrow>
+                      <ButtonBase
+                        onClick={() => onIdeaSelect(idea.prompt)}
+                        aria-label={`Pomysł: ${idea.label}`}
+                        sx={{
+                          width: '100%',
+                          height: '100%',
+                          borderRadius: '50%',
+                          bgcolor: '#fff',
+                          boxShadow: sky.bubbleShadow,
+                          fontSize: 'calc(var(--D) * 0.088)',
+                          lineHeight: 1,
+                          userSelect: 'none',
+                          transition: 'scale .15s ease, box-shadow .2s ease',
+                          animation: `${popIn} .3s ease backwards`,
+                          animationDelay: `${index * 25}ms`,
+                          '&:hover': { scale: '1.14', boxShadow: '0 10px 26px rgba(47, 128, 237, 0.32)' },
+                          '&:active': { scale: '0.94' },
+                          '&.Mui-focusVisible': { outline: `3px solid ${sky.blue}`, outlineOffset: 2 },
+                          ...noMotion,
+                        }}
+                      >
+                        <span aria-hidden>{idea.icon}</span>
+                      </ButtonBase>
+                    </Tooltip>
                   </Box>
-                </Tooltip>
+                </Box>
               );
             })}
-          </>
+          </Box>
         )}
+
+        <Box sx={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', pointerEvents: 'none' }}>
+          <Box sx={{ position: 'relative', width: 'var(--M)', height: 'var(--M)', pointerEvents: 'auto' }}>
+            {recording &&
+              [0, 0.6].map((delay) => (
+                <Box
+                  key={delay}
+                  aria-hidden
+                  sx={{
+                    position: 'absolute',
+                    inset: 0,
+                    borderRadius: '50%',
+                    bgcolor: micColors.to,
+                    animation: `${ripple} 1.4s ease-out ${delay}s infinite`,
+                    ...noMotion,
+                  }}
+                />
+              ))}
+            <ButtonBase
+              aria-label={recording ? 'Gotowe – narysuj kolorowankę' : 'Nagraj pomysł głosowo'}
+              disabled={micDisabled}
+              onClick={recording ? onStopRecording : onStartRecording}
+              sx={{
+                position: 'relative',
+                width: '100%',
+                height: '100%',
+                borderRadius: '50%',
+                color: '#fff',
+                background: `linear-gradient(145deg, ${micColors.from}, ${micColors.to})`,
+                boxShadow: `0 0 0 calc(var(--M) * 0.055) rgba(255, 255, 255, 0.78), 0 calc(var(--M) * 0.1) calc(var(--M) * 0.22) ${micColors.glow}`,
+                animation: recording || micDisabled ? 'none' : `${breathe} 2.6s ease-in-out infinite`,
+                transition: 'filter .2s ease, opacity .2s ease',
+                '&:hover': { filter: 'brightness(1.05)' },
+                '&:active': { filter: 'brightness(0.95)' },
+                '&.Mui-disabled': { opacity: 0.55 },
+                '&.Mui-focusVisible': { outline: `4px solid ${sky.blue}`, outlineOffset: 6 },
+                '& svg': { fontSize: 'calc(var(--M) * 0.46)' },
+                ...noMotion,
+              }}
+            >
+              {recording ? <CheckRoundedIcon /> : <MicRoundedIcon />}
+            </ButtonBase>
+          </Box>
+        </Box>
       </Box>
-      {status !== 'recording' && (
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'text.secondary', height: 18 }}>
-          <BrushIcon
-            fontSize="small"
-            sx={{ animation: `${wiggle} 2.4s ease-in-out infinite`, transformOrigin: 'bottom center', opacity: 0.85 }}
+
+      <Typography
+        role="status"
+        aria-live="polite"
+        sx={{ fontWeight: 800, fontSize: { xs: 17, sm: 20 }, textAlign: 'center', color: sky.ink, minHeight: '1.5em', px: 1 }}
+      >
+        {statusText}
+      </Typography>
+
+      {recording ? (
+        <Stack direction="row" alignItems="center" spacing={2} sx={{ height: 54 }}>
+          <Box
+            aria-label="Nagrywanie – wizualizacja dźwięku"
+            sx={{ display: 'flex', alignItems: 'center', gap: '4px', height: 36 }}
+          >
+            {Array.from({ length: 12 }).map((_, i) => (
+              <Box
+                // eslint-disable-next-line react/no-array-index-key
+                key={i}
+                sx={{
+                  width: 5,
+                  height: '100%',
+                  borderRadius: 3,
+                  background: `linear-gradient(to top, ${sky.blue}, #7FB6FF)`,
+                  animation: `${wave} ${1.1 + (i % 5) * 0.12}s ease-in-out ${i * 0.08}s infinite`,
+                  ...noMotion,
+                }}
+              />
+            ))}
+          </Box>
+          <Button
+            variant="outlined"
+            color="inherit"
+            startIcon={<CloseRoundedIcon />}
+            onClick={onCancelRecording}
+            sx={{ borderRadius: 999, bgcolor: 'background.paper', borderColor: sky.line, color: sky.ink, px: 2.5 }}
+          >
+            Anuluj
+          </Button>
+        </Stack>
+      ) : (
+        <Box
+          component="form"
+          onSubmit={submitText}
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+            width: 'min(430px, 100%)',
+            height: 54,
+            pl: 2,
+            pr: '6px',
+            borderRadius: 999,
+            bgcolor: 'background.paper',
+            border: `1.5px solid ${sky.line}`,
+            boxShadow: sky.softShadow,
+            transition: 'border-color .15s ease',
+            '&:focus-within': { borderColor: sky.blue },
+          }}
+        >
+          <EditRoundedIcon sx={{ fontSize: 20, color: sky.muted }} />
+          <InputBase
+            value={text}
+            onChange={(event) => setText(event.target.value)}
+            placeholder="…albo napisz pomysł"
+            inputProps={{ 'aria-label': 'Napisz pomysł na kolorowankę', maxLength: 500, enterKeyHint: 'go' }}
+            sx={{ flex: 1, minWidth: 0, fontWeight: 600, fontFamily: 'inherit' }}
           />
+          <ButtonBase
+            type="submit"
+            aria-label="Narysuj"
+            disabled={!text.trim() || !canRecord}
+            sx={{
+              width: 42,
+              height: 42,
+              borderRadius: '50%',
+              bgcolor: sky.blue,
+              color: '#fff',
+              flex: 'none',
+              transition: 'opacity .15s ease, transform .1s ease',
+              '&.Mui-disabled': { opacity: 0.35 },
+              '&:active': { transform: 'scale(0.94)' },
+            }}
+          >
+            <ArrowForwardRoundedIcon />
+          </ButtonBase>
         </Box>
       )}
     </Stack>
