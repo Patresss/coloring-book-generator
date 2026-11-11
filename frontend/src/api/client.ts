@@ -31,14 +31,25 @@ export type RuntimeConfig = {
   openaiTimeoutMs: number;
   geminiTimeoutMs?: number;
   imageModel?: string;
-  imageModelOptions?: string[];
   geminiAspectRatio?: string;
-  imageReferencesModel?: string;
   textModel?: string;
   sttModel?: string;
   printerUri?: string;
   missingEnv?: string[];
   canGenerate?: boolean;
+};
+
+export type ModelKind = 'image' | 'text' | 'stt';
+export type ModelOption = { id: string; label?: string };
+export type ModelKindInfo = {
+  options: ModelOption[];
+  active: string;
+  source: 'selected' | 'env' | 'recommended' | 'fallback';
+  recommended: string | null;
+};
+export type ModelsInfo = Record<ModelKind, ModelKindInfo> & {
+  fetchedAt: number;
+  errors: Partial<Record<'gemini' | 'openai', string>>;
 };
 
 export const getConfig = async (): Promise<RuntimeConfig> => {
@@ -109,6 +120,20 @@ export const api = {
   },
   async detectReferences(id: string, prompt: string): Promise<{ id: string; references: string[]; available: string[] }>{
     return postJson('/api/references/detect', { id, prompt }, OPENAI_TIMEOUT);
+  },
+  async getModels(refresh = false): Promise<ModelsInfo> {
+    return withTimeout(async (signal) => {
+      const res = await safeFetch(`/api/models${refresh ? '?refresh=1' : ''}`, { signal });
+      if (!res.ok) throw new Error(await safeText(res));
+      return res.json();
+    }, 60000);
+  },
+  async saveModels(update: Partial<Record<ModelKind, string | null>>): Promise<ModelsInfo> {
+    return withTimeout(async (signal) => {
+      const res = await safeFetch('/api/models', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(update), signal });
+      if (!res.ok) throw new Error(await safeText(res));
+      return res.json();
+    }, 60000);
   },
   async print(id: string): Promise<{ jobId: string }>{
     return postJson('/api/print', { id });

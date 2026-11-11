@@ -98,12 +98,6 @@ export const App: React.FC = () => {
     } catch {}
     return false;
   });
-  const [selectedImageModel, setSelectedImageModel] = useState<string | null>(() => {
-    try {
-      return localStorage.getItem('geminiImageModel');
-    } catch {}
-    return null;
-  });
   const [confettiKey, setConfettiKey] = useState<number | null>(null);
   const [sfxEnabled, setSfxEnabled] = useState<boolean>(() => {
     try {
@@ -116,7 +110,6 @@ export const App: React.FC = () => {
   const [includeTranscribeStep, setIncludeTranscribeStep] = useState<boolean>(false);
   const [generatingElapsedSeconds, setGeneratingElapsedSeconds] = useState<number>(0);
   const canGenerate = runtimeConfig?.canGenerate !== false;
-  const activeImageModel = selectedImageModel || runtimeConfig?.imageModel || undefined;
   const goHome = () => { window.location.href = '/'; };
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -157,30 +150,6 @@ export const App: React.FC = () => {
     try { localStorage.setItem('improveEnabled', String(improveEnabled)); } catch {}
     try { localStorage.setItem('landscapeMode', String(landscapeMode)); } catch {}
   }, [autoPrint, improveEnabled, landscapeMode]);
-
-  useEffect(() => {
-    if (!runtimeConfig) return;
-    setSelectedImageModel((prev) => {
-      const options = runtimeConfig.imageModelOptions ?? [];
-      if (prev && (!options.length || options.includes(prev))) {
-        return prev;
-      }
-      if (runtimeConfig.imageModel && (!options.length || options.includes(runtimeConfig.imageModel))) {
-        return runtimeConfig.imageModel;
-      }
-      if (options.length > 0) {
-        return options[0];
-      }
-      return prev;
-    });
-  }, [runtimeConfig]);
-
-  useEffect(() => {
-    if (!selectedImageModel) return;
-    try {
-      localStorage.setItem('geminiImageModel', selectedImageModel);
-    } catch {}
-  }, [selectedImageModel]);
 
   useEffect(() => {
     if (!selected) return;
@@ -267,7 +236,6 @@ export const App: React.FC = () => {
           setStatus('generating');
           const gen = await api.generate(newId, finalPrompt, {
             landscape: landscapeMode,
-            imageModel: activeImageModel,
             references: detectedReferences,
           });
           setImageUrl(gen.imageUrl);
@@ -428,7 +396,6 @@ export const App: React.FC = () => {
       setStatus('generating');
       const gen = await api.generate(newId, finalPrompt, {
         landscape: landscapeMode,
-        imageModel: activeImageModel,
         references: detectedReferences,
       });
       setImageUrl(gen.imageUrl);
@@ -466,7 +433,6 @@ export const App: React.FC = () => {
       const newId = String(Date.now());
       const gen = await api.generate(newId, item.prompt, {
         landscape: landscapeMode,
-        imageModel: activeImageModel,
         references: Array.isArray(item.references) && item.references.length > 0 ? item.references : undefined,
       });
       setImageUrl(gen.imageUrl);
@@ -525,7 +491,6 @@ export const App: React.FC = () => {
       setStatus('generating');
       const gen = await api.generate(id, finalPrompt, {
         landscape: landscapeMode,
-        imageModel: activeImageModel,
         references: detectedReferences,
       });
       setImageUrl(gen.imageUrl);
@@ -673,9 +638,7 @@ export const App: React.FC = () => {
       <ConfigDialog
         open={configOpen}
         runtimeConfig={runtimeConfig}
-        selectedImageModel={selectedImageModel ?? runtimeConfig?.imageModel ?? null}
-        onSelectImageModel={(model) => setSelectedImageModel(model)}
-        onClose={() => setConfigOpen(false)}
+        onClose={() => { setConfigOpen(false); ensureConfigLoaded(); }}
       />
       {isMobile && (
         <HistoryDialog

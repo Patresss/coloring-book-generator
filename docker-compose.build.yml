@@ -15,10 +15,10 @@ services:
       # OPCJONALNE - Odkomentuj i skonfiguruj według potrzeb
       # - PRINTER_URI=ipp://192.168.1.100/ipp/print
       # - PRINTER_MEDIA=iso_a4_210x297mm
-      # - GEMINI_IMAGE_MODELS=gemini-3-pro-image-preview,gemini-2.5-flash-image
+      # - GEMINI_IMAGE_MODELS=gemini-3-pro-image
       # - GEMINI_IMAGE_ASPECT_RATIO=2:3
-      # - OPENAI_TEXT_MODEL=gpt-5-mini
-      # - OPENAI_STT_MODEL=whisper-1
+      # - OPENAI_TEXT_MODEL=gpt-6.1-sol
+      # - OPENAI_STT_MODEL=gpt-transcribe
       # - OPENAI_TIMEOUT_MS=240000
       # - APP_PASSWORD=
     volumes:

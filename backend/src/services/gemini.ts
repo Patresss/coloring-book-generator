@@ -108,7 +108,8 @@ const generateWithGemini = async (subject: string, references: string[] | undefi
   const effectiveAspect = opts?.aspectRatio || config.geminiAspectRatio;
   const effectiveModel = opts?.model || config.geminiImageModel;
 
-  const isGemini3 = effectiveModel.includes('gemini-3');
+  // imageSize is not supported by Gemini 2.x image models
+  const isGemini3 = !/gemini-(1|2)\./.test(effectiveModel);
 
   logger.info('Gemini: generate call', {
     subject,
@@ -136,7 +137,6 @@ const generateWithGemini = async (subject: string, references: string[] | undefi
   if (effectiveAspect) {
     imageConfig.aspectRatio = effectiveAspect;
   }
-  // imageSize is only supported in Gemini 3 models
   if (config.geminiImageSize && isGemini3) {
     imageConfig.imageSize = config.geminiImageSize;
   }

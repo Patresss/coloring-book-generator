@@ -1,9 +1,10 @@
 import { Router, type Request, type Response } from 'express';
 import { config } from '../config.js';
+import { getModel } from '../services/models.js';
 
 export const configRouter = Router();
 
-configRouter.get('/', (_req: Request, res: Response) => {
+configRouter.get('/', async (_req: Request, res: Response) => {
   const expectedEnv = [
     'OPENAI_API_KEY',
     'GEMINI_API_KEY',
@@ -14,12 +15,10 @@ configRouter.get('/', (_req: Request, res: Response) => {
   res.json({
     openaiTimeoutMs: config.openaiTimeoutMs,
     geminiTimeoutMs: config.geminiTimeoutMs,
-    imageModel: config.geminiImageModel,
-    imageModelOptions: config.geminiImageModels,
+    imageModel: await getModel('image'),
     geminiAspectRatio: config.geminiAspectRatio,
-    imageReferencesModel: config.imageReferencesModel,
-    textModel: config.textModel,
-    sttModel: config.sttModel,
+    textModel: await getModel('text'),
+    sttModel: await getModel('stt'),
     printerUri: config.printerUri,
     missingEnv,
     canGenerate,

@@ -4,6 +4,7 @@ import OpenAI from 'openai';
 import { config } from '../config.js';
 import { logger } from '../utils/logger.js';
 import { apiErrorDetails, openAIErrorMessage } from '../utils/apierror.js';
+import { getModel } from './models.js';
 
 export const createOpenAIClient = () => new OpenAI({
   apiKey: config.openaiApiKey,
@@ -20,13 +21,14 @@ export const transcribeAudio = async (audioPath: string): Promise<string> => {
     return 'Smok, zamek i rycerz';
   }
   const fileBuf = await fs.readFile(audioPath);
-  logger.info('OpenAI: transcribe call', { audioPath, bytes: fileBuf.byteLength });
+  const sttModel = await getModel('stt');
+  logger.info('OpenAI: transcribe call', { audioPath, bytes: fileBuf.byteLength, model: sttModel });
 
   const client = getClient();
   const fileStream = fsSync.createReadStream(audioPath);
   const resp = await client.audio.transcriptions.create({
     file: fileStream as any,
-    model: config.sttModel || 'whisper-1',
+    model: sttModel,
     language: 'pl',
   });
   return (resp as any).text || '';
@@ -41,7 +43,7 @@ export const improvePrompt = async (original: string): Promise<string> => {
   logger.info('OpenAI: improve prompt call', { original });
 
   const client = getClient();
-  const chatModel = config.textModel || 'gpt-4o-mini';
+  const chatModel = await getModel('text');
   let improved: string | undefined;
 
   try {
@@ -56,7 +58,7 @@ export const improvePrompt = async (original: string): Promise<string> => {
     logger.error('OpenAI: prompt improvement failed', apiErrorDetails(e));
     throw new Error(openAIErrorMessage(e, 'Nie udało się ulepszyć promptu'));
   }
-  logger.info('Improved prompt', { improved });
+  logger.info('Improved prompt', { improved, model: chatModel });
 
   if (!improved) throw new Error('Brak treści ulepszonego promptu');
   return improved;

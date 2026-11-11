@@ -7,6 +7,7 @@ import fs from 'fs';
 import path from 'path';
 import { isValidId } from '../utils/validation.js';
 import { config } from '../config.js';
+import { getModelCatalog, resolveModel } from '../services/models.js';
 
 export const generateRouter = Router();
 
@@ -32,9 +33,9 @@ generateRouter.post('/', async (req: Request, res: Response) => {
           .map((ref) => (typeof ref === 'string' ? ref.trim() : ''))
           .filter((ref) => ref.length > 0)
       : [];
-    const resolvedModel = requestedModel && config.geminiImageModels.includes(requestedModel)
-      ? requestedModel
-      : config.geminiImageModel;
+    const catalog = await getModelCatalog().catch(() => null);
+    const allowedRequested = requestedModel && (catalog?.image.some((m) => m.id === requestedModel) || config.geminiImageModels.includes(requestedModel));
+    const resolvedModel = allowedRequested ? requestedModel : (await resolveModel('image', catalog ?? undefined)).id;
     logger.info('Generation: start', {
       id,
       prompt,

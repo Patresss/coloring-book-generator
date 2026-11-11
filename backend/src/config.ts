@@ -17,7 +17,7 @@ const parseList = (value?: string | undefined): string[] => {
     .filter((entry) => entry.length > 0);
 };
 
-const defaultGeminiImageModels = ['gemini-2.5-flash-image', 'gemini-3-pro-image-preview', ];
+const defaultGeminiImageModels = ['gemini-3-pro-image', 'gemini-nano-banana-2.1'];
 const configuredImageModels = parseList(process.env.GEMINI_IMAGE_MODELS);
 const fallbackImageModels = configuredImageModels.length > 0 ? configuredImageModels : defaultGeminiImageModels;
 const primaryGeminiModel = fallbackImageModels[0] || defaultGeminiImageModels[0];
@@ -37,8 +37,8 @@ export const config = {
   openaiApiKey: process.env.OPENAI_API_KEY || '',
   printerUri: process.env.PRINTER_URI || '',
   imageReferencesModel: process.env.OPENAI_IMAGE_REFERENCES_MODEL || 'gpt-5',
-  textModel: process.env.OPENAI_TEXT_MODEL || 'gpt-4o-mini',
-  sttModel: process.env.OPENAI_STT_MODEL || 'whisper-1',
+  textModel: process.env.OPENAI_TEXT_MODEL || 'gpt-6.1-sol',
+  sttModel: process.env.OPENAI_STT_MODEL || 'gpt-transcribe',
   openaiTimeoutMs: Number(process.env.OPENAI_TIMEOUT_MS || 240000),
   // Prompts with environment variable overrides
   promptColoringBook: process.env.PROMPT_COLORING_BOOK || constants.PROMPT_COLORING_BOOK,

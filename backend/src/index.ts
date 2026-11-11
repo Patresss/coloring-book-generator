@@ -13,6 +13,7 @@ import { improveRouter } from './routes/improve.js';
 import { authRequired } from './middleware/auth.js';
 import { authRouter } from './routes/auth.js';
 import { referencesRouter } from './routes/references.js';
+import { modelsRouter } from './routes/models.js';
 
 const app = express();
 
@@ -66,6 +67,7 @@ app.use('/api/references', makeRateLimit(20, 60_000), referencesRouter);
 app.use('/api/print', printRouter);
 app.use('/api/history', historyRouter);
 app.use('/api/config', configRouter);
+app.use('/api/models', makeRateLimit(30, 60_000), modelsRouter);
 
 app.use('/files', express.static(config.dataDir));
 

@@ -6,6 +6,7 @@ import { config } from '../config.js';
 import { logger } from '../utils/logger.js';
 import { apiErrorDetails, openAIErrorMessage } from '../utils/apierror.js';
 import { createOpenAIClient } from './openai.js';
+import { getModel } from './models.js';
 
 const referenceSchema = z.object({
   references: z.array(z.string()),
@@ -49,10 +50,11 @@ export const detectReferences = async (userPrompt: string): Promise<ReferenceDet
   if (available.length === 0) return { references: [], available };
 
   const client = createOpenAIClient();
-  logger.info('References: detect start avaiable', { count: available.length });
+  const textModel = await getModel('text');
+  logger.info('References: detect start available', { count: available.length, model: textModel });
   try {
     const response = await client.responses.parse({
-      model: config.textModel,
+      model: textModel,
       input: [
         { role: 'user', content: buildReferenceUserMessage(userPrompt, available) },
       ],
