@@ -37,8 +37,9 @@ export const PROMPT_DETECT_REFERENCES = `Wyszukaj wszystkie pliki referencyjne i
 
 // Printing defaults (IPP)
 export const PRINTER_MEDIA_A4 = 'iso_a4_210x297mm';
-export const PRINTER_SCALING_FIT = 'fit';
-export const PRINTER_QUALITY_DRAFT = 3; // 3=draft, 4=normal, 5=high
 export const PRINTER_DOCUMENT_NAME = FILE_IMAGE_JPG;
 export const PRINTER_COLOR_MODE_MONO = 'monochrome';
-export const PRINTER_OPTIMIZE_TEXT = 'text';
+export const PRINTER_COLOR_MODE_COLOR = 'color';
+export const PRINTER_FORMAT_PWG_RASTER = 'image/pwg-raster';
+export const PRINTER_MEDIA_TYPE_PLAIN = 'stationery';
+export const PRINTER_A4_SIZE = { 'x-dimension': 21000, 'y-dimension': 29700 }; // hundredths of a millimetre

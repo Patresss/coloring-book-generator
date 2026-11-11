@@ -1,7 +1,7 @@
 import { Router, type Request, type Response } from 'express';
 import path from 'path';
 import fs from 'fs';
-import { getSessionDir, markPrinted } from '../services/storage.js';
+import { getSessionDir, markPrinted, readMeta } from '../services/storage.js';
 import { printFile } from '../services/printer.js';
 import { logger } from '../utils/logger.js';
 import { config } from '../config.js';
@@ -19,8 +19,10 @@ printRouter.post('/', async (req: Request, res: Response) => {
     const candidates = [FILE_IMAGE_JPG, FILE_IMAGE_PNG];
     const existing = candidates.map(name => path.join(dir, name)).find(p => fs.existsSync(p));
     if (!existing) return res.status(404).json({ error: 'Brak obrazu do druku (image.jpg/png nie istnieje)' });
-    logger.info('Printing: start', { id, file: existing, printer: config.printerUri });
-    const jobId = await printFile(existing);
+    const meta = await readMeta(id).catch(() => null);
+    const color = meta?.mode === 'image';
+    logger.info('Printing: start', { id, file: existing, printer: config.printerUri, color });
+    const jobId = await printFile(existing, { color });
     await markPrinted(id);
     logger.info('Printing: finished', { id, jobId });
     res.json({ jobId, file: path.basename(existing) });
